@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -39,6 +41,14 @@ public class TableStore {
     private final JdbcClient db;
     private final ObjectMapper json;
     private final Map<String, Map<String, String>> columnTypes = new ConcurrentHashMap<>();
+    private final Map<String, List<Column>> schemaColumns = new ConcurrentHashMap<>();
+
+    /** One column of a devplan table, with the UI metadata from its own comment (migration V13): "title",
+     * "required", "format" ("email"/"date"), "options" (an x-options lookup name), "group", "row" (fields sharing a
+     * group+row pair up in one HorizontalLayout). No comment = an empty object, so every lookup below just falls
+     * back to a sensible default. */
+    record Column(String name, String dataType, JsonNode meta) {
+    }
 
     public TableStore(JdbcClient db, ObjectMapper json) {
         this.db = db;
@@ -66,6 +76,165 @@ public class TableStore {
 
     public static String column(String property) {
         return property.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    /** The schema property name of a column: the inverse of column() ("date_of_birth" -> "dateOfBirth"). */
+    static String propertyOf(String column) {
+        StringBuilder result = new StringBuilder();
+        boolean upperNext = false;
+        for (char c : column.toCharArray()) {
+            if (c == '_') {
+                upperNext = true;
+            } else {
+                result.append(upperNext ? Character.toUpperCase(c) : c);
+                upperNext = false;
+            }
+        }
+        return result.toString();
+    }
+
+    /** Every column of a devplan table with its metadata, in the table's own column order; read once. */
+    private List<Column> columnList(String table) {
+        if (!table.matches("[a-z_]+")) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown x-pii table " + table + " in the form");
+        }
+        List<Column> result = schemaColumns.computeIfAbsent(table, t -> db.sql(
+                "SELECT c.column_name, c.data_type, col_description(format('%I.%I', c.table_schema, "
+                        + "c.table_name)::regclass::oid, c.ordinal_position) FROM information_schema.columns c "
+                        + "WHERE c.table_schema = 'devplan' AND c.table_name = ? ORDER BY c.ordinal_position")
+                .param(t).query((rs, n) -> new Column(rs.getString(1), rs.getString(2), readMeta(rs.getString(3)))).list());
+        if (result.isEmpty()) {
+            schemaColumns.remove(table);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown x-pii table " + table + " in the form");
+        }
+        return result;
+    }
+
+    private JsonNode readMeta(String comment) {
+        if (comment == null || comment.isBlank()) {
+            return json.createObjectNode();
+        }
+        try {
+            return json.readTree(comment);
+        } catch (Exception e) {
+            return json.createObjectNode();
+        }
+    }
+
+    /** The table's non-system columns, in display order: by their metadata's "order" when given, else in column
+     * order after everything that does declare one - so a new column with no comment yet still shows up, at the
+     * end, rather than being silently dropped. */
+    private List<Column> ordered(String table) {
+        List<Column> columns = new ArrayList<>();
+        for (Column c : columnList(table)) {
+            if (!SYSTEM.contains(c.name())) {
+                columns.add(c);
+            }
+        }
+        columns.sort(Comparator.comparingInt(c -> c.meta().path("order").asInt(Integer.MAX_VALUE)));
+        return columns;
+    }
+
+    private static String jsonType(String sqlType) {
+        return switch (sqlType) {
+            case "boolean" -> "boolean";
+            case "integer", "bigint", "smallint", "numeric" -> "number";
+            default -> "string";
+        };
+    }
+
+    /** "date_of_birth" -> "Date of birth": the default title for a column with no "title" in its comment. */
+    private static String titleCase(String column) {
+        String[] words = column.split("_");
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].isEmpty()) {
+                continue;
+            }
+            result.append(i == 0 ? Character.toUpperCase(words[i].charAt(0)) : words[i].charAt(0))
+                    .append(words[i].substring(1)).append(' ');
+        }
+        return result.toString().strip();
+    }
+
+    /** The JSON Schema object (properties + required) for an "x-pii" table, built entirely from its own columns and
+     * their comments - see migration V13 for the comment format. Nothing here is table-specific: a new column with a
+     * matching comment is a new form field, no Java change. */
+    ObjectNode schemaOf(String table) {
+        ObjectNode schema = json.createObjectNode();
+        schema.put("type", "object");
+        ObjectNode properties = schema.putObject("properties");
+        ArrayNode required = schema.putArray("required");
+        for (Column c : ordered(table)) {
+            String property = propertyOf(c.name());
+            ObjectNode field = properties.putObject(property);
+            field.put("type", jsonType(c.dataType()));
+            field.put("title", c.meta().path("title").asText(titleCase(c.name())));
+            if (c.meta().hasNonNull("format")) {
+                field.put("format", c.meta().path("format").asText());
+            }
+            if (c.meta().hasNonNull("options")) {
+                field.put("x-options", c.meta().path("options").asText());
+            }
+            if (c.meta().path("required").asBoolean(false)) {
+                required.add(property);
+            }
+        }
+        return schema;
+    }
+
+    /** The generated layout for an "x-pii" object at schema path "properties"."property": one Group per distinct
+     * "group" in its columns' metadata (ungrouped columns share one unlabeled group), in the order each group first
+     * appears; fields sharing a "group" + "row" pair up in a HorizontalLayout, a field with no "row" stands alone. */
+    ArrayNode uiGroupsOf(String property, String table) {
+        ArrayNode groups = json.createArrayNode();
+        ObjectNode currentGroup = null;
+        String currentGroupKey = null;
+        String pendingRowKey = null;
+        List<ObjectNode> pendingRow = new ArrayList<>();
+        for (Column c : ordered(table)) {
+            String groupLabel = c.meta().path("group").asText(null);
+            String groupKey = groupLabel == null ? "" : groupLabel;
+            String rowKey = groupKey + "/" + c.meta().path("row").asText(propertyOf(c.name()));
+            if (!groupKey.equals(currentGroupKey)) {
+                flushRow(currentGroup, pendingRow);
+                pendingRow = new ArrayList<>();
+                pendingRowKey = null;
+                currentGroup = groups.addObject();
+                currentGroup.put("type", "Group");
+                if (!groupKey.isEmpty()) {
+                    currentGroup.put("label", groupLabel);
+                }
+                currentGroup.putArray("elements");
+                currentGroupKey = groupKey;
+            }
+            if (!rowKey.equals(pendingRowKey)) {
+                flushRow(currentGroup, pendingRow);
+                pendingRow = new ArrayList<>();
+                pendingRowKey = rowKey;
+            }
+            ObjectNode control = json.createObjectNode();
+            control.put("type", "Control");
+            control.put("scope", "#/properties/" + property + "/properties/" + propertyOf(c.name()));
+            pendingRow.add(control);
+        }
+        flushRow(currentGroup, pendingRow);
+        return groups;
+    }
+
+    private static void flushRow(ObjectNode group, List<ObjectNode> pendingRow) {
+        if (group == null || pendingRow.isEmpty()) {
+            return;
+        }
+        ArrayNode elements = (ArrayNode) group.get("elements");
+        if (pendingRow.size() == 1) {
+            elements.add(pendingRow.get(0));
+        } else {
+            ObjectNode horizontal = elements.addObject();
+            horizontal.put("type", "HorizontalLayout");
+            ArrayNode inner = horizontal.putArray("elements");
+            pendingRow.forEach(inner::add);
+        }
     }
 
     /** The column of a schema property: its "x-column", else its name in snake_case. */

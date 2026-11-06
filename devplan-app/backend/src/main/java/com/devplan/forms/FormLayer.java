@@ -1,6 +1,7 @@
 package com.devplan.forms;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,11 +49,46 @@ public class FormLayer {
         this.actions = actions;
     }
 
-    /** A copy of the task-model with every "x-options" field given its "oneOf" choices. */
+    /** A copy of the task-model with every "x-pii" property's schema filled in from its table's own columns (its
+     * case-model entry is just the {@code "x-pii": "<table>"} marker - see TableStore.schemaOf/uiGroupsOf), its
+     * uiSchema "PiiSection" placeholder expanded into the matching generated layout, and every "x-options" field
+     * given its "oneOf" choices. */
     public JsonNode prepareModel(JsonNode taskModel, FormContext ctx, JsonNode formData) {
         JsonNode copy = taskModel.deepCopy();
+        Map<String, String> piiTables = new LinkedHashMap<>();
+        for (var p : personalData(copy)) {
+            ((ObjectNode) copy.path("schema").path("properties")).set(p.getKey(), p.getValue());
+            piiTables.put(p.getKey(), p.getValue().path("x-pii").asText());
+        }
+        if (!piiTables.isEmpty()) {
+            expandPiiSections(copy.path("uiSchema"), piiTables);
+        }
         resolveOptions(copy.path("schema"), ctx, formData);
         return copy;
+    }
+
+    /** Replaces every {@code {"type": "PiiSection", "scope": "#/properties/<Property>"}} placeholder in the
+     * uiSchema with the generated Group layout for that "x-pii" property (TableStore.uiGroupsOf), wherever in the
+     * uiSchema tree it appears. */
+    private void expandPiiSections(JsonNode node, Map<String, String> piiTables) {
+        if (node.isObject() && node.get("elements") instanceof ArrayNode elements) {
+            List<JsonNode> expanded = new ArrayList<>();
+            for (JsonNode element : elements) {
+                String table = "PiiSection".equals(element.path("type").asText())
+                        ? piiTables.get(element.path("scope").asText("").replaceFirst("^#/properties/", "")) : null;
+                if (table != null) {
+                    tables.uiGroupsOf(element.path("scope").asText().replaceFirst("^#/properties/", ""), table)
+                            .forEach(expanded::add);
+                } else {
+                    expandPiiSections(element, piiTables);
+                    expanded.add(element);
+                }
+            }
+            elements.removeAll();
+            expanded.forEach(elements::add);
+        } else if (node.isArray()) {
+            node.forEach(child -> expandPiiSections(child, piiTables));
+        }
     }
 
     private void resolveOptions(JsonNode node, FormContext ctx, JsonNode formData) {
@@ -149,11 +185,18 @@ public class FormLayer {
         });
     }
 
-    private static List<Map.Entry<String, JsonNode>> personalData(JsonNode taskModel) {
+    /** The task-model's "x-pii" properties, each with its schema resolved from its table's own columns
+     * (TableStore.schemaOf) rather than from the case model: the case model only ever carries the
+     * {@code "x-pii": "<table>"} marker (plus e.g. "x-on-complete"), never the field list itself. Resolving here,
+     * not only in prepareModel(), is what lets merge()/split() - which run on the task-model straight from the
+     * engine - find the real properties/required of a "x-pii" object. */
+    private List<Map.Entry<String, JsonNode>> personalData(JsonNode taskModel) {
         List<Map.Entry<String, JsonNode>> result = new ArrayList<>();
         taskModel.path("schema").path("properties").properties().forEach(p -> {
             if (p.getValue().hasNonNull("x-pii")) {
-                result.add(p);
+                ObjectNode resolved = ((ObjectNode) p.getValue()).deepCopy();
+                resolved.setAll(tables.schemaOf(resolved.path("x-pii").asText()));
+                result.add(Map.entry(p.getKey(), resolved));
             }
         });
         return result;

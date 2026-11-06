@@ -44,7 +44,9 @@ public class Lookups {
                 "buddies", "SELECT employee_id, name FROM employee WHERE stage = 'ACTIVE' AND user_id IS NOT NULL "
                         + "AND role IN ('employee', 'manager') AND employee_id <> coalesce(?, '') ORDER BY name",
                 "departments", "SELECT name, name FROM department ORDER BY name",
-                "jobTitles", "SELECT name, name FROM job_title ORDER BY name");
+                "jobTitles", "SELECT name, name FROM job_title ORDER BY name",
+                "grades", "SELECT code, title FROM grade ORDER BY sort_order",
+                "roles", "SELECT code, title FROM app_role ORDER BY sort_order");
         String query = sql.get(lookup);
         if (query == null) {
             return List.of();

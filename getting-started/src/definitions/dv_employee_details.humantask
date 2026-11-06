@@ -1,7 +1,7 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
     <cafienne:implementation name="EmployeeDetails" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Onboarding step 1 - Employee details. Owner: HR. The "Details" object is personal data: the devplan backend reads and writes it in its own database (x-pii "employee"), never in the case file. On complete the backend creates the account and returns the Employee case item.]]></text>
+            <text><![CDATA[Onboarding step 1 - Employee details. Owner: HR. The "Details" object is personal data: the devplan backend reads and writes it in its own database (x-pii "employee"), never in the case file. Its field list, titles, required-ness and layout come from the employee table's own columns and column comments (see migration V13__employee_details_schema_from_db.sql / forms/TableStore.java), not from this task-model - the case model only carries the "x-pii": "employee" routing marker. On complete the backend creates the account and returns the Employee case item.]]></text>
         </documentation>
         <input id="i_Employee__employee_details" name="Employee" typeRef="dv_employee.type"/>
         <output id="o_Employee__employee_details" name="Employee" typeRef="dv_employee.type"/>
@@ -31,80 +31,14 @@
       "Details": {
         "type": "object",
         "x-pii": "employee",
-        "x-on-complete": "createEmployee",
-        "required": ["firstName", "lastName", "privateEmail", "mobilePhone", "dateOfBirth", "jobTitle", "department", "managerId", "grade", "role"],
-        "properties": {
-          "firstName": { "type": "string", "title": "First name" },
-          "lastName": { "type": "string", "title": "Last name" },
-          "privateEmail": { "type": "string", "title": "Private e-mail", "format": "email" },
-          "mobilePhone": { "type": "string", "title": "Mobile phone" },
-          "dateOfBirth": { "type": "string", "title": "Date of birth", "format": "date" },
-          "nationality": { "type": "string", "title": "Nationality" },
-          "street": { "type": "string", "title": "Street + number" },
-          "postcode": { "type": "string", "title": "Postcode" },
-          "city": { "type": "string", "title": "City" },
-          "jobTitle": { "type": "string", "title": "Job title", "x-options": "jobTitles" },
-          "department": { "type": "string", "title": "Department", "x-options": "departments" },
-          "managerId": { "type": "string", "title": "Manager", "x-options": "managers" },
-          "grade": {
-            "type": "string", "title": "Grade",
-            "oneOf": [
-              { "const": "JUNIOR", "title": "Junior" },
-              { "const": "MEDIOR", "title": "Medior" },
-              { "const": "SENIOR", "title": "Senior" }
-            ]
-          },
-          "role": {
-            "type": "string", "title": "Application role",
-            "oneOf": [
-              { "const": "employee", "title": "Employee" },
-              { "const": "manager", "title": "Manager" },
-              { "const": "hr", "title": "HR" },
-              { "const": "it_admin", "title": "IT admin" }
-            ]
-          },
-          "buddyId": { "type": "string", "title": "Buddy", "x-options": "buddies" }
-        }
+        "x-on-complete": "createEmployee"
       }
     }
   },
   "uiSchema": {
     "type": "VerticalLayout",
     "elements": [
-      {
-        "type": "Group",
-        "label": "Personal details",
-        "elements": [
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/firstName" },
-            { "type": "Control", "scope": "#/properties/Details/properties/lastName" } ] },
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/privateEmail" },
-            { "type": "Control", "scope": "#/properties/Details/properties/mobilePhone" } ] },
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/dateOfBirth" },
-            { "type": "Control", "scope": "#/properties/Details/properties/nationality" } ] },
-          { "type": "Control", "scope": "#/properties/Details/properties/street" },
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/postcode" },
-            { "type": "Control", "scope": "#/properties/Details/properties/city" } ] }
-        ]
-      },
-      {
-        "type": "Group",
-        "label": "Role &amp; reporting",
-        "elements": [
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/jobTitle" },
-            { "type": "Control", "scope": "#/properties/Details/properties/department" } ] },
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/managerId" },
-            { "type": "Control", "scope": "#/properties/Details/properties/grade" } ] },
-          { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/Details/properties/role" },
-            { "type": "Control", "scope": "#/properties/Details/properties/buddyId" } ] }
-        ]
-      },
+      { "type": "PiiSection", "scope": "#/properties/Details" },
           {
   "type": "Group",
   "label": "Welcome kit",
