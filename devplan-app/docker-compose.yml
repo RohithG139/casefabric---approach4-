@@ -19,6 +19,10 @@ services:
       POSTGRES_USER: ${DEVPLAN_DB_USER:-devplan}
       POSTGRES_PASSWORD: ${DEVPLAN_DB_PASSWORD:-devplan}
       POSTGRES_DB: ${DEVPLAN_DB_NAME:-devplan}
+    ports:
+      # Published so pgAdmin (or any host client) can connect directly; 5431 is already
+      # taken by case-engine-db-postgres in ../getting-started, and 5432 may be a local install.
+      - "${DEVPLAN_DB_PORT:-5433}:5432"
     volumes:
       - devplan-db-data:/var/lib/postgresql/data
     healthcheck:
