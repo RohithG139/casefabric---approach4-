@@ -1,10 +1,12 @@
 <type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_selfassessment.type" name="dv_selfassessment">
     <schema>
         <property id="sp_SelfAssessment_submitted" name="submitted" type="boolean" multiplicity="ZeroOrOne" />
+        <property id="sp_SelfAssessment_summary" name="summary" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_SelfAssessment_goalResults" name="goalResults" type="object" multiplicity="ZeroOrMore">
             <schema id="sc_SelfAssessment_goalResults" name="goalResults">
                 <property id="sp_SelfAssessment_goalResults_goalTitle" name="goalTitle" type="string" multiplicity="ZeroOrOne" />
                 <property id="sp_SelfAssessment_goalResults_result" name="result" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_SelfAssessment_goalResults_comments" name="comments" type="string" multiplicity="ZeroOrOne" />
             </schema>
         </property>
     </schema>

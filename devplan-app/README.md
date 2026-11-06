@@ -122,7 +122,7 @@ pop-up (policies are plain ticks).
 4. **kevin_it**: *My Tasks* shows one **Equipment request** per new joiner; IT's checklist items are checkboxes inside
    it, not separate rows. Record issued equipment (asset register; ticks the matching item), tick the accounts →
    *Mark setup done* (refused while a mandatory IT item is open).
-5. **New joiner**: *Dashboard* with their own items only; **Confirm equipment received** task.
+5. **New joiner**: *Dashboard* with their own items only.
 6. HR can still tick or add items on the wizard's checklist (the manager and HR have no default items).
 7. **sridhar_hr**: wizard → *Checklist* → **Complete onboarding** (enabled when every mandatory item is done) →
    milestone *Employee onboarded*, employee stage *Active*.
@@ -131,7 +131,6 @@ pop-up (policies are plain ticks).
 
 | Process task | When | To | Content |
 |---|---|---|---|
-| **Send welcome e-mail** (`dv_mail_welcome.process`) | Employee details completed | the joiner's private e-mail | username, login link (the password link comes separately from Keycloak) |
 | **Notify IT** (`dv_mail_it_request.process`) | IT & equipment request completed | the IT admin | a new equipment request is waiting |
 | **Send onboarding complete e-mail** (`dv_mail_onboarded.process`) | the Onboarding stage ends | HR, manager in cc | the joiner is onboarded |
 
@@ -142,7 +141,7 @@ file) to the backend's `/internal/mail` relay (docker network only, shared `X-Ma
 mailcatcher (http://localhost:1080).
 
 **Username**: `firstname.lastname` in lower-case ASCII (accents removed), with a number added when it is taken
-(`priya.sharma`, `priya.sharma2`). It is shown in the wizard header and in the welcome mail.
+(`priya.sharma`, `priya.sharma2`). It is shown in the wizard header.
 
 ### Where the data lives
 
@@ -156,7 +155,7 @@ mailcatcher (http://localhost:1080).
 ### The form layer: forms from the engine, data from the database
 
 Every onboarding form is still the `task-model` of its `.humantask` (`dv_employee_details`, `dv_it_request`,
-`dv_equipment_request`, `dv_confirm_equipment`); the app has no hand-coded forms. Three extra keys in the schema tell
+`dv_equipment_request`); the app has no hand-coded forms. Three extra keys in the schema tell
 the backend (`forms/FormLayer.java`) which data is not case data:
 
 | Key | On | Meaning |
@@ -165,7 +164,7 @@ the backend (`forms/FormLayer.java`) which data is not case data:
 | `"x-case": true` | a field inside a stored property | The field is also sent to the case file. |
 | `"x-column": "<column>"` | a field | Its column, when it is not the field name in snake_case (`result` → `self_result`). |
 | `"x-options": "managers"` / `"buddies"` / `"departments"` / `"jobTitles"` / `"goals"` | a field | The backend fills `oneOf` from the DB (`forms/Lookups.java`). |
-| `"x-on-complete": "createEmployee"` / `"sendToIt"` / `"itSetupDone"` / `"confirmEquipment"` / `"submitPlan"` / `"decidePlan"` / `"addActivity"` / `"addReview"` / `"submitSelfAssessment"` / `"closeRound"` | a stored property | Backend action run on complete (`forms/OnboardingActions.java`, `forms/DevelopmentActions.java`); it may return case outputs (e.g. `Plan.roundId`). |
+| `"x-on-complete": "createEmployee"` / `"sendToIt"` / `"itSetupDone"` / `"submitPlan"` / `"decidePlan"` / `"addActivity"` / `"addReview"` / `"submitSelfAssessment"` / `"closeRound"` | a stored property | Backend action run on complete (`forms/OnboardingActions.java`, `forms/DevelopmentActions.java`); it may return case outputs (e.g. `Plan.roundId`). |
 
 Plus the uiSchema option `"table": true` on a list of objects (an
 editable table instead of expandable rows; used for issued equipment, goals, activities). A task-model without these keys passes through unchanged. There is no

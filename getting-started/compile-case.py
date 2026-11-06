@@ -161,6 +161,10 @@ class Compiler:
                 return self.read(prop.get('type')).find(q('schema'))
             return prop.find(q('schema'))
 
+        def primitive_kind(sub):
+            kind = FORMAT_TYPE.get(sub.get('format'), sub.get('type', 'string'))
+            return JSON_TYPE.get(kind, kind)
+
         def items(schema, path, parent):
             for prop in schema.findall(q('property')):
                 if not is_object(prop):
@@ -171,16 +175,34 @@ class Compiler:
                     'name': name, 'definitionType': UNSPECIFIED,
                     'id': '%s_type_%s.object' % (type_name, '_'.join(item_path))})
                 nested = schema_of(prop)
+                # A primitive sub-property repeats (multiplicity other than ZeroOrOne): CMMN only repeats case file
+                # items, not plain properties, so it gets its own bare (property-less) item instead of a <property>.
+                repeating = []
                 for sub in (nested.findall(q('property')) if nested is not None else []):
-                    if not is_object(sub):
-                        kind = FORMAT_TYPE.get(sub.get('format'), sub.get('type', 'string'))
-                        kind = JSON_TYPE.get(kind, kind)
-                        ET.SubElement(definition, q('property'), {'name': sub.get('name'), 'type': PROPERTY_TYPE + kind})
+                    if is_object(sub):
+                        continue
+                    if sub.get('multiplicity', 'ZeroOrOne') == 'ZeroOrOne':
+                        ET.SubElement(definition, q('property'),
+                                      {'name': sub.get('name'), 'type': PROPERTY_TYPE + primitive_kind(sub)})
+                    else:
+                        repeating.append(sub)
                 definitions.append(definition)
                 item = child(parent, 'caseFileItem', id='/'.join(item_path), name=name,
                              multiplicity=prop.get('multiplicity', 'ZeroOrOne'), definitionRef=definition.get('id'))
-                if nested is not None and any(is_object(p) for p in nested.findall(q('property'))):
-                    items(nested, item_path, child(item, 'children'))
+                has_object_children = nested is not None and any(is_object(p) for p in nested.findall(q('property')))
+                if has_object_children or repeating:
+                    children = child(item, 'children')
+                    if has_object_children:
+                        items(nested, item_path, children)
+                    for sub in repeating:
+                        sub_name = sub.get('name')
+                        sub_path = item_path + [sub_name]
+                        sub_definition = ET.Element(q('caseFileItemDefinition'), {
+                            'name': sub_name, 'definitionType': UNSPECIFIED,
+                            'id': '%s_type_%s.value' % (type_name, '_'.join(sub_path))})
+                        definitions.append(sub_definition)
+                        child(children, 'caseFileItem', id='/'.join(sub_path), name=sub_name,
+                              multiplicity=sub.get('multiplicity'), definitionRef=sub_definition.get('id'))
 
         model = ET.Element(q('caseFileModel'), {q('typeRef', CAF): type_ref})
         items(type_root.find(q('schema')), [], model)

@@ -115,43 +115,52 @@
             <Bounds x="1344" y="710" width="12" height="20"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_onboarding">
-            <Bounds x="60" y="55" width="1000" height="350"/>
+            <Bounds x="60" y="60" width="1000" height="350"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="ec_onboarding_0">
-            <Bounds x="54" y="165" width="12" height="20"/>
+            <Bounds x="54" y="170" width="12" height="20"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="xc_onboarding_0">
-            <Bounds x="1054" y="165" width="12" height="20"/>
+            <Bounds x="1054" y="170" width="12" height="20"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_employee_details">
-            <Bounds x="100" y="115" width="140" height="80"/>
+            <Bounds x="100" y="120" width="140" height="80"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_it_request">
-            <Bounds x="300" y="115" width="140" height="80"/>
+            <Bounds x="300" y="120" width="140" height="80"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="ec_it_request_0">
-            <Bounds x="294" y="145" width="12" height="20"/>
+            <Bounds x="294" y="150" width="12" height="20"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_equipment_request">
-            <Bounds x="500" y="115" width="140" height="80"/>
+            <Bounds x="500" y="120" width="140" height="80"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="ec_equipment_request_0">
-            <Bounds x="494" y="145" width="12" height="20"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="pi_confirm_equipment">
-            <Bounds x="700" y="115" width="140" height="80"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_confirm_equipment_0">
-            <Bounds x="694" y="145" width="12" height="20"/>
+            <Bounds x="494" y="150" width="12" height="20"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_complete_onboarding">
-            <Bounds x="740" y="235" width="32" height="32"/>
+            <Bounds x="740" y="240" width="32" height="32"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="pi_employee_onboarded">
-            <Bounds x="880" y="225" width="120" height="40"/>
+            <Bounds x="880" y="230" width="120" height="40"/>
         </CMMNShape>
         <CMMNShape cmmnElementRef="ec_employee_onboarded_0">
-            <Bounds x="874" y="235" width="12" height="20"/>
+            <Bounds x="874" y="240" width="12" height="20"/>
+        </CMMNShape>
+        <CMMNShape cmmnElementRef="pi_mail_it_request">
+            <Bounds x="300" y="295" width="140" height="70"/>
+        </CMMNShape>
+        <CMMNShape cmmnElementRef="ec_mail_it_request_0">
+            <Bounds x="364" y="285" width="12" height="20"/>
+        </CMMNShape>
+        <CMMNShape cmmnElementRef="ec_mail_onboarded_1">
+            <Bounds x="1114" y="235" width="12" height="20"/>
+        </CMMNShape>
+        <CMMNShape cmmnElementRef="pi_mail_onboarded">
+            <Bounds x="1120" y="190" width="160" height="70"/>
+        </CMMNShape>
+        <CMMNShape cmmnElementRef="ec_mail_onboarded_0">
+            <Bounds x="1114" y="200" width="12" height="20"/>
         </CMMNShape>
         <CMMNEdge sourceCMMNElementRef="pi_plan_closed" targetCMMNElementRef="xc_development_plan_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_start_plan" targetCMMNElementRef="ec_plan_0">
@@ -172,31 +181,8 @@
         <CMMNEdge sourceCMMNElementRef="pi_evaluate_results" targetCMMNElementRef="ec_plan_closed_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_employee_details" targetCMMNElementRef="ec_it_request_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_it_request" targetCMMNElementRef="ec_equipment_request_0"/>
-        <CMMNEdge sourceCMMNElementRef="pi_equipment_request" targetCMMNElementRef="ec_confirm_equipment_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_complete_onboarding" targetCMMNElementRef="ec_employee_onboarded_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_employee_onboarded" targetCMMNElementRef="xc_onboarding_0"/>
-        <CMMNShape cmmnElementRef="pi_mail_welcome">
-            <Bounds x="100" y="290" width="140" height="70"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_mail_welcome_0">
-            <Bounds x="164" y="280" width="12" height="20"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="pi_mail_it_request">
-            <Bounds x="300" y="290" width="140" height="70"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_mail_it_request_0">
-            <Bounds x="364" y="280" width="12" height="20"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_mail_onboarded_1">
-            <Bounds x="1114" y="235" width="12" height="20"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="pi_mail_onboarded">
-            <Bounds x="1120" y="190" width="160" height="70"/>
-        </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_mail_onboarded_0">
-            <Bounds x="1114" y="200" width="12" height="20"/>
-        </CMMNShape>
-        <CMMNEdge sourceCMMNElementRef="pi_employee_details" targetCMMNElementRef="ec_mail_welcome_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_it_request" targetCMMNElementRef="ec_mail_it_request_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_onboarding" targetCMMNElementRef="ec_mail_onboarded_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_onboarding" targetCMMNElementRef="ec_mail_onboarded_1"/>

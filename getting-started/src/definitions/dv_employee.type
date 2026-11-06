@@ -1,10 +1,10 @@
 <type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_employee.type" name="dv_employee">
     <schema>
+        <!-- Only ids and non-personal business data: employeeId/managerId are correlation keys (needed for routing
+             and display lookups), never the person's name. The backend resolves name/jobTitle/managerName from the
+             employee directory (DB) by these ids whenever the UI needs to show them - see CaseController. -->
         <property id="sp_Employee_employeeId" name="employeeId" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Employee_name" name="name" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Employee_jobTitle" name="jobTitle" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Employee_managerId" name="managerId" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Employee_managerName" name="managerName" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Employee_trigger" name="trigger" type="string" multiplicity="ZeroOrOne" />
     </schema>
 </type>

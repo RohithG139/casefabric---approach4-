@@ -1,19 +1,36 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
     <cafienne:implementation name="EmployeeDetails" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Onboarding step 1 - Employee details. Owner: HR. The "Details" object is business data: the devplan backend reads and writes it in its own database (x-store "employee"), never in the case file. On complete the backend creates the account and returns the Employee case item.]]></text>
+            <text><![CDATA[Onboarding step 1 - Employee details. Owner: HR. The "Details" object is personal data: the devplan backend reads and writes it in its own database (x-pii "employee"), never in the case file. On complete the backend creates the account and returns the Employee case item.]]></text>
         </documentation>
         <input id="i_Employee__employee_details" name="Employee" typeRef="dv_employee.type"/>
         <output id="o_Employee__employee_details" name="Employee" typeRef="dv_employee.type"/>
+        <output id="swag__G4OQ" name="swag" typeRef="dv_swag.type"/>
         <task-model>{
   "schema": {
     "title": "Employee details",
     "description": "Personal details and the role of the new employee. Save draft keeps the form; Save &amp; continue creates the account and opens the IT request.",
     "type": "object",
     "properties": {
+          "swag": {
+  "type": "object",
+  "title": "Welcome kit",
+  "properties": {
+    "size": {
+      "type": "string",
+      "title": "T-shirt size",
+      "oneOf": [
+        { "const": "S", "title": "S" },
+        { "const": "M", "title": "M" },
+        { "const": "L", "title": "L" },
+        { "const": "XL", "title": "XL" }
+      ]
+    }
+  }
+},
       "Details": {
         "type": "object",
-        "x-store": "employee",
+        "x-pii": "employee",
         "x-on-complete": "createEmployee",
         "required": ["firstName", "lastName", "privateEmail", "mobilePhone", "dateOfBirth", "jobTitle", "department", "managerId", "grade", "role"],
         "properties": {
@@ -87,7 +104,14 @@
             { "type": "Control", "scope": "#/properties/Details/properties/role" },
             { "type": "Control", "scope": "#/properties/Details/properties/buddyId" } ] }
         ]
-      }
+      },
+          {
+  "type": "Group",
+  "label": "Welcome kit",
+  "elements": [
+    { "type": "Control", "scope": "#/properties/swag/properties/size" }
+  ]
+}
     ]
   },
   "submitLabel": "Save &amp; continue"

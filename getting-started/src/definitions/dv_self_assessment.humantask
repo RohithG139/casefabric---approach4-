@@ -20,24 +20,20 @@
       "Plan": {
         "type": "object",
         "title": "Development plan",
-        "x-store": "dev_round",
         "properties": {
           "period": {
             "type": "string",
-            "title": "Plan period",
-            "x-case": true
+            "title": "Plan period"
           },
           "goals": {
             "type": "array",
             "title": "Goals",
-            "x-store": "dev_goal",
             "items": {
               "type": "object",
               "properties": {
                 "title": {
                   "type": "string",
-                  "title": "Goal",
-                  "x-case": true
+                  "title": "Goal"
                 },
                 "type": {
                   "type": "string",
@@ -59,8 +55,7 @@
                       "const": "CAREER",
                       "title": "Career"
                     }
-                  ],
-                  "x-case": true
+                  ]
                 },
                 "description": {
                   "type": "string",
@@ -73,8 +68,7 @@
                 "targetDate": {
                   "type": "string",
                   "title": "Target date",
-                  "format": "date",
-                  "x-case": true
+                  "format": "date"
                 }
               }
             }
@@ -85,7 +79,6 @@
       "Activities": {
         "type": "array",
         "title": "Activities",
-        "x-store": "dev_activity",
         "readOnly": true,
         "items": {
           "type": "object",
@@ -149,7 +142,6 @@
       "ProgressReviews": {
         "type": "array",
         "title": "Earlier reviews",
-        "x-store": "dev_progress_review",
         "readOnly": true,
         "items": {
           "type": "object",
@@ -157,14 +149,11 @@
             "date": {
               "type": "string",
               "title": "Review date",
-              "format": "date",
-              "x-column": "review_date",
-              "x-case": true
+              "format": "date"
             },
             "onTrack": {
               "type": "boolean",
-              "title": "On track",
-              "x-case": true
+              "title": "On track"
             },
             "notes": {
               "type": "string",
@@ -176,8 +165,7 @@
             },
             "planCompleted": {
               "type": "boolean",
-              "title": "The plan has been carried out",
-              "x-case": true
+              "title": "The plan has been carried out"
             }
           }
         }
@@ -185,22 +173,17 @@
       "SelfAssessment": {
         "type": "object",
         "title": "Self-assessment",
-        "x-store": "dev_round",
         "properties": {
           "goalResults": {
             "type": "array",
             "title": "Result per goal",
-            "x-store": "dev_goal",
-            "x-rows": "update",
             "items": {
               "type": "object",
               "properties": {
                 "goalTitle": {
                   "type": "string",
                   "title": "Goal",
-                  "x-column": "title",
-                  "readOnly": true,
-                  "x-case": true
+                  "readOnly": true
                 },
                 "result": {
                   "type": "string",
@@ -222,14 +205,11 @@
                       "const": "NOT_MET",
                       "title": "Not met"
                     }
-                  ],
-                  "x-column": "self_result",
-                  "x-case": true
+                  ]
                 },
                 "comments": {
                   "type": "string",
-                  "title": "Comments",
-                  "x-column": "self_comments"
+                  "title": "Comments"
                 }
               },
               "required": [
@@ -239,8 +219,7 @@
           },
           "summary": {
             "type": "string",
-            "title": "Summary",
-            "x-column": "self_summary"
+            "title": "Summary"
           }
         },
         "x-on-complete": "submitSelfAssessment",

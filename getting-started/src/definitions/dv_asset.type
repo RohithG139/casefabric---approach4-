@@ -1,0 +1,10 @@
+<type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_asset.type" name="dv_asset">
+    <schema>
+        <property id="sp_Assets_assetType" name="assetType" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Assets_model" name="model" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Assets_assetNumber" name="assetNumber" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Assets_serialNumber" name="serialNumber" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Assets_issuedOn" name="issuedOn" type="string" multiplicity="ZeroOrOne" format="date" />
+        <property id="sp_Assets_received" name="received" type="boolean" multiplicity="ZeroOrOne" />
+    </schema>
+</type>

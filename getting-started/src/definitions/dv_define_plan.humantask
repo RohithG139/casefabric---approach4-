@@ -17,24 +17,20 @@
       "Plan": {
         "type": "object",
         "title": "Development plan",
-        "x-store": "dev_round",
         "properties": {
           "period": {
             "type": "string",
-            "title": "Plan period",
-            "x-case": true
+            "title": "Plan period"
           },
           "goals": {
             "type": "array",
             "title": "Goals",
-            "x-store": "dev_goal",
             "items": {
               "type": "object",
               "properties": {
                 "title": {
                   "type": "string",
-                  "title": "Goal",
-                  "x-case": true
+                  "title": "Goal"
                 },
                 "type": {
                   "type": "string",
@@ -56,8 +52,7 @@
                       "const": "CAREER",
                       "title": "Career"
                     }
-                  ],
-                  "x-case": true
+                  ]
                 },
                 "description": {
                   "type": "string",
@@ -70,8 +65,7 @@
                 "targetDate": {
                   "type": "string",
                   "title": "Target date",
-                  "format": "date",
-                  "x-case": true
+                  "format": "date"
                 }
               },
               "required": [

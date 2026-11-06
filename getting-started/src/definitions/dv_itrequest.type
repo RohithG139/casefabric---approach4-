@@ -1,0 +1,11 @@
+<type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_itrequest.type" name="dv_itrequest">
+    <schema>
+        <property id="sp_ITRequest_itLaptopModel" name="itLaptopModel" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_ITRequest_itKeyboardLayout" name="itKeyboardLayout" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_ITRequest_itReadyBy" name="itReadyBy" type="string" multiplicity="ZeroOrOne" format="date" />
+        <property id="sp_ITRequest_itDeliveryMethod" name="itDeliveryMethod" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_ITRequest_itAccessories" name="itAccessories" type="string" multiplicity="ZeroOrMore" />
+        <property id="sp_ITRequest_itAccounts" name="itAccounts" type="string" multiplicity="ZeroOrMore" />
+        <property id="sp_ITRequest_itNotes" name="itNotes" type="string" multiplicity="ZeroOrOne" />
+    </schema>
+</type>

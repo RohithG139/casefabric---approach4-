@@ -162,9 +162,7 @@ function TaskList() {
                 <td>{i.employeeName}</td>
                 <td>—</td>
                 <td className="col-center">
-                  {i.itemKind === 'EQUIPMENT_CONFIRM'
-                    ? <span className="cell-sub">via its task</span>
-                    : <button className="btn btn-primary btn-xs" onClick={() => tick(i)}>Mark done</button>}
+                  <button className="btn btn-primary btn-xs" onClick={() => tick(i)}>Mark done</button>
                 </td>
               </tr>
             ))}

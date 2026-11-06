@@ -1,9 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { JsonForms } from '@jsonforms/react';
-import { materialCells } from '@jsonforms/material-renderers';
-import { ThemeProvider } from '@mui/material/styles';
+import React, { useEffect, useState } from 'react';
 import { api } from './api.js';
-import { Badge, OPEN_TASK, Problem, StateBadge, TASK_STATE, ago, caseRolesOf, day, renderers, setFlash, theme, useLoad } from './shared.jsx';
+import { Badge, OPEN_TASK, Problem, StateBadge, TASK_STATE, ago, caseRolesOf, day, setFlash, useLoad } from './shared.jsx';
 import TaskForm from './TaskForm.jsx';
 
 const ROUND_STATUS = {
@@ -14,8 +11,8 @@ const ROUND_STATUS = {
 /**
  * One employee's development plan, in the onboarding wizard's look. The step tabs are the stages inside the case
  * model's "Development plan" stage (1 · Plan, 2 · Perform plan, 3 · Evaluate plan), each with the tasks of its latest
- * run rendered as their engine forms. The last tab is the plan record: every round from the devplan database, shown
- * in a read-only form built from the development task forms. Nothing here names a task, stage or field.
+ * run rendered as their engine forms. The last tab is the plan record: every round straight from the case file
+ * (closed rounds from PreviousRounds, the running one live), newest first.
  */
 export default function DevelopmentPlan({ caseId, me }) {
   const [data, error, reload] = useLoad(`/cases/${caseId}/plan`);
@@ -120,34 +117,89 @@ export default function DevelopmentPlan({ caseId, me }) {
   );
 }
 
-/** Every plan round from the devplan database, newest first, in the read-only form the backend builds from the model. */
+/** The goal result for one goal from a self-assessment's or evaluation's goalResults, by title. */
+const resultFor = (results, title) => (results || []).find((r) => r.goalTitle === title);
+
+/** Every plan round straight from the case file (closed rounds from PreviousRounds, the running one from the live
+ * case data), newest first. */
 function PlanRecord({ record }) {
   const [index, setIndex] = useState(0);
-  const schema = useMemo(() => record.taskModel.schema, [record]);
   const rounds = record.rounds;
   if (rounds.length === 0) return <div className="card empty">No plan has been sent yet.</div>;
   const round = rounds[Math.min(index, rounds.length - 1)];
   const [kind, text] = ROUND_STATUS[round.status] || ['neutral', round.status];
+  const goals = round.plan?.goals || [];
+  const activities = round.activities || [];
+  const reviews = round.progressReviews || [];
+
   return (
     <div>
       <div className="chips round-chips">
         {rounds.map((r, i) => (
-          <button key={r.id} type="button" className={`btn btn-sm ${i === index ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIndex(i)}>
-            Round {r.round_no}{r.period ? ` · ${r.period}` : ''}
+          <button key={r.roundNo} type="button" className={`btn btn-sm ${i === index ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIndex(i)}>
+            Round {r.roundNo}{r.period ? ` · ${r.period}` : ''}
           </button>
         ))}
       </div>
       <div className="status-line">
-        <span className="sl-label">Round {round.round_no}</span>
+        <span className="sl-label">Round {round.roundNo}</span>
         <Badge kind={kind}>{text}</Badge>
-        <span className="sl-meta">started {day(round.created_at)}</span>
       </div>
-      <ThemeProvider theme={theme}>
-        <div className="wf-form">
-          <JsonForms key={round.id} schema={schema} uischema={record.taskModel.uiSchema} data={round.data}
-                     renderers={renderers} cells={materialCells} readonly />
+
+      <div className="card">
+        <div className="card-title">Goals</div>
+        {goals.length === 0 ? <p className="muted">No goals yet.</p> : (
+          <ul className="plain">
+            {goals.map((g, i) => {
+              const self = resultFor(round.selfAssessment?.goalResults, g.title);
+              const evaluated = resultFor(round.evaluation?.goalResults, g.title);
+              return (
+                <li key={i}>
+                  <b>{g.title}</b> <span className="muted">· {g.type} · by {day(g.targetDate)}</span>
+                  {g.successCriteria && <div className="cell-sub">{g.successCriteria}</div>}
+                  {(self || evaluated) && (
+                    <div className="cell-sub">
+                      {self && `Self: ${self.result}`}{self && evaluated && ' · '}{evaluated && `Evaluation: ${evaluated.result}`}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {round.approval?.decision && (
+        <div className="card">
+          <div className="card-title">Manager's decision</div>
+          <p>{round.approval.decision}{round.approval.comments ? ` — ${round.approval.comments}` : ''}</p>
         </div>
-      </ThemeProvider>
+      )}
+
+      {activities.length > 0 && (
+        <div className="card">
+          <div className="card-title">Activities</div>
+          <ul className="plain">
+            {activities.map((a, i) => <li key={i}>{a.description} <span className="muted">· {a.type} · {a.status}</span></li>)}
+          </ul>
+        </div>
+      )}
+
+      {reviews.length > 0 && (
+        <div className="card">
+          <div className="card-title">Progress reviews</div>
+          <ul className="plain">
+            {reviews.map((r, i) => <li key={i}>{day(r.date)}: {r.onTrack ? 'on track' : 'not on track'}{r.notes ? ` — ${r.notes}` : ''}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {round.evaluation?.summary && (
+        <div className="card">
+          <div className="card-title">Evaluation summary</div>
+          <p>{round.evaluation.summary}</p>
+        </div>
+      )}
     </div>
   );
 }

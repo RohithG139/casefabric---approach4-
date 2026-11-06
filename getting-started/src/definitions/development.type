@@ -8,5 +8,7 @@
         <property id="sp_ProgressReviews" name="ProgressReviews" type="dv_progressreview.type" multiplicity="ZeroOrMore"/>
         <property id="sp_SelfAssessment" name="SelfAssessment" type="dv_selfassessment.type" multiplicity="ZeroOrOne"/>
         <property id="sp_Evaluation" name="Evaluation" type="dv_evaluation.type" multiplicity="ZeroOrOne"/>
+        <property id="sp_PreviousRounds" name="PreviousRounds" type="dv_previousround.type" multiplicity="ZeroOrMore"/>
+        <property id="sp__vSOZO_0" name="swag" type="dv_swag.type" multiplicity="ExactlyOne"/>
     </schema>
 </type>

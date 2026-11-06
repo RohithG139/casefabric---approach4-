@@ -1,0 +1,72 @@
+<type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_previousround.type" name="dv_previousround">
+    <schema>
+        <property id="sp_PreviousRounds_roundNo" name="roundNo" type="integer" multiplicity="ZeroOrOne" />
+        <property id="sp_PreviousRounds_period" name="period" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_PreviousRounds_plan" name="plan" type="object" multiplicity="ZeroOrOne">
+            <schema id="sc_PreviousRounds_plan" name="plan">
+                <property id="sp_PreviousRounds_plan_period" name="period" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_plan_goals" name="goals" type="object" multiplicity="ZeroOrMore">
+                    <schema id="sc_PreviousRounds_plan_goals" name="goals">
+                        <property id="sp_PreviousRounds_plan_goals_title" name="title" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_plan_goals_type" name="type" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_plan_goals_description" name="description" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_plan_goals_successCriteria" name="successCriteria" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_plan_goals_targetDate" name="targetDate" type="string" multiplicity="ZeroOrOne" format="date" />
+                    </schema>
+                </property>
+            </schema>
+        </property>
+        <property id="sp_PreviousRounds_approval" name="approval" type="object" multiplicity="ZeroOrOne">
+            <schema id="sc_PreviousRounds_approval" name="approval">
+                <property id="sp_PreviousRounds_approval_decision" name="decision" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_approval_comments" name="comments" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_approval_decidedBy" name="decidedBy" type="string" multiplicity="ZeroOrOne" />
+            </schema>
+        </property>
+        <property id="sp_PreviousRounds_activities" name="activities" type="object" multiplicity="ZeroOrMore">
+            <schema id="sc_PreviousRounds_activities" name="activities">
+                <property id="sp_PreviousRounds_activities_type" name="type" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_activities_description" name="description" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_activities_relatedGoal" name="relatedGoal" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_activities_status" name="status" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_activities_dueDate" name="dueDate" type="string" multiplicity="ZeroOrOne" format="date" />
+                <property id="sp_PreviousRounds_activities_outcome" name="outcome" type="string" multiplicity="ZeroOrOne" />
+            </schema>
+        </property>
+        <property id="sp_PreviousRounds_progressReviews" name="progressReviews" type="object" multiplicity="ZeroOrMore">
+            <schema id="sc_PreviousRounds_progressReviews" name="progressReviews">
+                <property id="sp_PreviousRounds_progressReviews_date" name="date" type="string" multiplicity="ZeroOrOne" format="date" />
+                <property id="sp_PreviousRounds_progressReviews_onTrack" name="onTrack" type="boolean" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_progressReviews_notes" name="notes" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_progressReviews_adjustments" name="adjustments" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_progressReviews_planCompleted" name="planCompleted" type="boolean" multiplicity="ZeroOrOne" />
+            </schema>
+        </property>
+        <property id="sp_PreviousRounds_selfAssessment" name="selfAssessment" type="object" multiplicity="ZeroOrOne">
+            <schema id="sc_PreviousRounds_selfAssessment" name="selfAssessment">
+                <property id="sp_PreviousRounds_selfAssessment_summary" name="summary" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_selfAssessment_goalResults" name="goalResults" type="object" multiplicity="ZeroOrMore">
+                    <schema id="sc_PreviousRounds_selfAssessment_goalResults" name="goalResults">
+                        <property id="sp_PreviousRounds_selfAssessment_goalResults_goalTitle" name="goalTitle" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_selfAssessment_goalResults_result" name="result" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_selfAssessment_goalResults_comments" name="comments" type="string" multiplicity="ZeroOrOne" />
+                    </schema>
+                </property>
+            </schema>
+        </property>
+        <property id="sp_PreviousRounds_evaluation" name="evaluation" type="object" multiplicity="ZeroOrOne">
+            <schema id="sc_PreviousRounds_evaluation" name="evaluation">
+                <property id="sp_PreviousRounds_evaluation_outcome" name="outcome" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_evaluation_summary" name="summary" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_evaluation_furtherDevelopment" name="furtherDevelopment" type="boolean" multiplicity="ZeroOrOne" />
+                <property id="sp_PreviousRounds_evaluation_goalResults" name="goalResults" type="object" multiplicity="ZeroOrMore">
+                    <schema id="sc_PreviousRounds_evaluation_goalResults" name="goalResults">
+                        <property id="sp_PreviousRounds_evaluation_goalResults_goalTitle" name="goalTitle" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_evaluation_goalResults_result" name="result" type="string" multiplicity="ZeroOrOne" />
+                        <property id="sp_PreviousRounds_evaluation_goalResults_comments" name="comments" type="string" multiplicity="ZeroOrOne" />
+                    </schema>
+                </property>
+            </schema>
+        </property>
+    </schema>
+</type>

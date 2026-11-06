@@ -1,6 +1,7 @@
 package com.devplan.forms;
 
 import java.text.Normalizer;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,17 +23,20 @@ import com.devplan.engine.EngineClient;
 import com.devplan.engine.KeycloakAdminClient;
 import com.devplan.engine.TenantRegistrar;
 import com.devplan.onboarding.Checklists;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * The "x-on-complete" actions of the onboarding forms: what happens besides saving the DB data when a task is
- * completed. Each returns the case-file outputs it derives (only IDs, names and flags), which the form layer adds to
- * the output it sends to the engine.
+ * The "x-on-complete" actions of the onboarding forms: what happens besides what the form itself writes to the case
+ * file when a task is completed. Equipment (Onboarding.Assets) and the checklist (Onboarding.Checklist) are case-file
+ * content now, not DB rows - an action changes them with ordinary case-file reads/writes, the same way it reaches the
+ * employee's own directory row for personal data. Each action returns the extra case-file outputs it derives (ids,
+ * names, flags), which the form layer merges into what it sends to the engine.
  */
 @Component
 public class OnboardingActions implements FormActions {
-    private static final Set<String> ACTIONS = Set.of("createEmployee", "sendToIt", "itSetupDone", "confirmEquipment");
+    private static final Set<String> ACTIONS = Set.of("createEmployee", "sendToIt", "itSetupDone");
 
     private static final Logger log = LoggerFactory.getLogger(OnboardingActions.class);
 
@@ -63,12 +67,11 @@ public class OnboardingActions implements FormActions {
     }
 
     @Override
-    public ObjectNode run(String action, FormContext ctx) {
+    public ObjectNode run(String action, FormContext ctx, ObjectNode caseData) {
         return switch (action) {
             case "createEmployee" -> createEmployee(ctx);
-            case "sendToIt" -> sendToIt(ctx);
-            case "itSetupDone" -> itSetupDone(ctx);
-            case "confirmEquipment" -> confirmEquipment(ctx);
+            case "sendToIt" -> sendToIt(ctx, caseData);
+            case "itSetupDone" -> itSetupDone(ctx, caseData);
             default -> throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown form action " + action);
         };
     }
@@ -78,7 +81,7 @@ public class OnboardingActions implements FormActions {
      * ONBOARDING, the checklist, the employee and manager in the case team; returns the Employee case item.
      */
     private ObjectNode createEmployee(FormContext ctx) {
-        Map<String, Object> row = db.sql("SELECT first_name, last_name, private_email, role, manager_id, job_title, "
+        Map<String, Object> row = db.sql("SELECT first_name, last_name, private_email, role, manager_id, "
                         + "user_id, username FROM employee WHERE employee_id = ?").param(ctx.employeeId())
                 .query((rs, n) -> TableStore.row(rs)).single();
         String name = (row.get("first_name") + " " + row.get("last_name")).trim();
@@ -114,40 +117,21 @@ public class OnboardingActions implements FormActions {
         }
         db.sql("UPDATE employee SET name = ?, stage = 'ONBOARDING' WHERE employee_id = ?")
                 .params(name, ctx.employeeId()).update();
-        db.sql("UPDATE onboarding SET status = 'IN_PROGRESS' WHERE employee_id = ?").param(ctx.employeeId()).update();
-        checklists.createDefaults(ctx.employeeId());
+        checklists.createDefaults(ctx.employeeId(), ctx.caseId());
 
         addToTeam(ctx.caseId(), userId, "Employee");
         addToTeam(ctx.caseId(), manager.userId(), "Manager");
-        mailRecipients(ctx, (String) row.get("private_email"), manager);
 
+        // No names or e-mail addresses go into the case file: the mail process tasks (Notify IT, Send onboarding
+        // complete e-mail) trigger with just Employee.employeeId, and the devplan backend's mail endpoints
+        // (MailRelayController) resolve real recipients from the employee directory at send time.
         ObjectNode output = json.createObjectNode();
         ObjectNode employee = output.putObject("Employee");
         employee.put("employeeId", ctx.employeeId());
-        employee.put("name", name);
-        employee.put("jobTitle", (String) row.get("job_title"));
         employee.put("managerId", manager.employeeId());
-        employee.put("managerName", manager.name());
         employee.put("trigger", "ONBOARDING");
+        output.putObject("Onboarding").put("status", "IN_PROGRESS");
         return output;
-    }
-
-    /**
-     * The addresses the case model's mail process tasks send to (welcome mail, IT notified, onboarding complete):
-     * set on the Onboarding case file item before Employee details completes, so the welcome mail has them.
-     */
-    private void mailRecipients(FormContext ctx, String privateEmail, Employee manager) {
-        String username = db.sql("SELECT username FROM employee WHERE employee_id = ?").param(ctx.employeeId())
-                .query(String.class).single();
-        String itEmail = db.sql("SELECT user_id FROM employee WHERE role = 'it_admin' AND user_id IS NOT NULL "
-                        + "ORDER BY employee_id LIMIT 1").query(String.class).optional().map(keycloak::email).orElse("");
-        Map<String, String> mail = new LinkedHashMap<>();
-        mail.put("employeeEmail", privateEmail);
-        mail.put("username", username);
-        mail.put("managerEmail", keycloak.email(manager.userId()));
-        mail.put("hrEmail", ctx.user().email() == null ? "" : ctx.user().email());
-        mail.put("itEmail", itEmail);
-        engine.put("/cases/" + ctx.caseId() + "/casefile/update/Onboarding", mail);
     }
 
     private void addToTeam(String caseId, String userId, String caseRole) {
@@ -167,51 +151,60 @@ public class OnboardingActions implements FormActions {
 
     /** Step 2 done: the request is sent; IT's checklist becomes what was requested, and the case flag starts the IT
      * admin's Equipment request. */
-    private ObjectNode sendToIt(FormContext ctx) {
-        db.sql("UPDATE onboarding SET it_status = 'SENT', it_sent_at = now() WHERE employee_id = ?")
-                .param(ctx.employeeId()).update();
-        Map<String, Object> request = db.sql("SELECT it_accessories::text AS accessories, it_accounts::text AS accounts "
-                + "FROM onboarding WHERE employee_id = ?").param(ctx.employeeId()).query().singleRow();
-        checklists.syncItItems(ctx.employeeId(), names(request.get("accessories")), names(request.get("accounts")));
+    private ObjectNode sendToIt(FormContext ctx, ObjectNode caseData) {
+        JsonNode request = caseData.path("Onboarding").path("ITRequest");
+        checklists.syncItItems(ctx.employeeId(), ctx.caseId(), names(request.path("itAccessories")), names(request.path("itAccounts")));
         ObjectNode output = json.createObjectNode();
-        // merged into the Onboarding item (no "replace"), so the mail addresses set in step 1 stay
-        output.putObject("Onboarding").put("itRequestSent", true);
+        output.putObject("Onboarding").put("itRequestSent", true).put("itStatus", "SENT").put("itSentAt", now());
         return output;
     }
 
-    /** The values of a JSON array column (e.g. the requested accounts). */
-    private List<String> names(Object jsonArray) {
-        if (jsonArray == null) {
-            return List.of();
-        }
-        try {
-            List<String> result = new ArrayList<>();
-            json.readTree(jsonArray.toString()).forEach(n -> result.add(n.asText()));
-            return result;
-        } catch (Exception e) {
-            return List.of();
-        }
+    private static List<String> names(JsonNode array) {
+        List<String> result = new ArrayList<>();
+        array.forEach(n -> result.add(n.asText()));
+        return result;
     }
 
     /** IT is done when every mandatory IT item (equipment, accounts) is ticked; the task shows them as checkboxes. */
-    private ObjectNode itSetupDone(FormContext ctx) {
-        List<String> open = db.sql("SELECT name FROM checklist_item WHERE employee_id = ? AND owner_role = 'IT_ADMIN' "
-                + "AND mandatory AND status = 'OPEN' ORDER BY sort_order").param(ctx.employeeId()).query(String.class).list();
+    private ObjectNode itSetupDone(FormContext ctx, ObjectNode caseData) {
+        JsonNode assets = caseData.path("Onboarding").path("Assets");
+        Set<String> numbers = new java.util.HashSet<>();
+        for (JsonNode asset : assets) {
+            String number = asset.path("assetNumber").asText("").trim();
+            if (number.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset no.: This field is required.");
+            }
+            if (!numbers.add(number)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "This asset number is already in use.");
+            }
+            checklists.markAssetIssued(ctx.employeeId(), ctx.caseId(), asset.path("assetType").asText(), ctx.user());
+        }
+        List<String> open = checklists.of(ctx.employeeId(), "IT_ADMIN").stream()
+                .filter(i -> i.mandatory() && !i.done()).map(Checklists.Item::name).toList();
         if (!open.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Tick all mandatory checklist items first: " + String.join(", ", open) + ".");
         }
-        db.sql("UPDATE onboarding SET it_status = 'COMPLETED', it_completed_at = now() WHERE employee_id = ?")
-                .param(ctx.employeeId()).update();
-        return json.createObjectNode();
+        // This task's Onboarding input/output is the whole case-file item (dv_onboarding.type), so caseData still
+        // carries the Checklist exactly as it was when the task was opened - stale by now, since the checklist is
+        // ticked live, directly in the case file (the embedded checklist above, and markAssetIssued just above).
+        // Letting that stale copy flow through as this task's output would overwrite every one of those ticks the
+        // moment "Mark setup done" completes the task, which is why they never reached HR's checklist tab. Only the
+        // fields this task's own schema declares (ITRequest, Assets) go back out.
+        JsonNode onboardingIn = caseData.path("Onboarding");
+        ObjectNode onboardingOut = json.createObjectNode();
+        if (onboardingIn.has("ITRequest")) {
+            onboardingOut.set("ITRequest", onboardingIn.get("ITRequest"));
+        }
+        onboardingOut.set("Assets", assets.isMissingNode() ? json.createArrayNode() : assets);
+        caseData.set("Onboarding", onboardingOut);
+
+        ObjectNode output = json.createObjectNode();
+        output.putObject("Onboarding").put("itStatus", "COMPLETED").put("itCompletedAt", now());
+        return output;
     }
 
-    /** The employee confirmed: their assets are marked received when they ticked "I received all ...". */
-    private ObjectNode confirmEquipment(FormContext ctx) {
-        db.sql("UPDATE onboarding SET equipment_confirmed_at = now() WHERE employee_id = ?").param(ctx.employeeId()).update();
-        db.sql("UPDATE asset SET received = coalesce((SELECT equipment_received FROM onboarding WHERE employee_id = ?), false) "
-                + "WHERE employee_id = ?").params(ctx.employeeId(), ctx.employeeId()).update();
-        checklists.markKindDone(ctx.employeeId(), "EQUIPMENT_CONFIRM", ctx.user());
-        return json.createObjectNode();
+    private static String now() {
+        return OffsetDateTime.now().toString();
     }
 }

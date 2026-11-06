@@ -1,0 +1,14 @@
+<type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_checklistitem.type" name="dv_checklistitem">
+    <schema>
+        <property id="sp_Checklist_section" name="section" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_name" name="name" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_ownerRole" name="ownerRole" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_itemKind" name="itemKind" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_assetType" name="assetType" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_mandatory" name="mandatory" type="boolean" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_sortOrder" name="sortOrder" type="integer" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_status" name="status" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_doneAt" name="doneAt" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Checklist_doneBy" name="doneBy" type="string" multiplicity="ZeroOrOne" />
+    </schema>
+</type>

@@ -1,11 +1,13 @@
 <type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_evaluation.type" name="dv_evaluation">
     <schema>
         <property id="sp_Evaluation_outcome" name="outcome" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Evaluation_summary" name="summary" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Evaluation_furtherDevelopment" name="furtherDevelopment" type="boolean" multiplicity="ZeroOrOne" />
         <property id="sp_Evaluation_goalResults" name="goalResults" type="object" multiplicity="ZeroOrMore">
             <schema id="sc_Evaluation_goalResults" name="goalResults">
                 <property id="sp_Evaluation_goalResults_goalTitle" name="goalTitle" type="string" multiplicity="ZeroOrOne" />
                 <property id="sp_Evaluation_goalResults_result" name="result" type="string" multiplicity="ZeroOrOne" />
+                <property id="sp_Evaluation_goalResults_comments" name="comments" type="string" multiplicity="ZeroOrOne" />
             </schema>
         </property>
     </schema>

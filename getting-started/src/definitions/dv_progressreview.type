@@ -2,6 +2,8 @@
     <schema>
         <property id="sp_ProgressReviews_date" name="date" type="string" multiplicity="ZeroOrOne" format="date" />
         <property id="sp_ProgressReviews_onTrack" name="onTrack" type="boolean" multiplicity="ZeroOrOne" />
+        <property id="sp_ProgressReviews_notes" name="notes" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_ProgressReviews_adjustments" name="adjustments" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_ProgressReviews_planCompleted" name="planCompleted" type="boolean" multiplicity="ZeroOrOne" />
     </schema>
 </type>

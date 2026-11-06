@@ -2,8 +2,10 @@
     <schema>
         <property id="sp_Activities_activityId" name="activityId" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Activities_type" name="type" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Activities_description" name="description" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Activities_relatedGoal" name="relatedGoal" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Activities_status" name="status" type="string" multiplicity="ZeroOrOne" />
         <property id="sp_Activities_dueDate" name="dueDate" type="string" multiplicity="ZeroOrOne" format="date" />
+        <property id="sp_Activities_outcome" name="outcome" type="string" multiplicity="ZeroOrOne" />
     </schema>
 </type>

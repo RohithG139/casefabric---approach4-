@@ -247,12 +247,10 @@ function AddItemModal({ employeeId, onClose }) {
 /** The new joiner's dashboard (Screen 9): own onboarding items only (ONB-07), team and equipment. */
 export function EmployeeDashboard({ me }) {
   const [data, error, reload] = useLoad('/onboarding/me');
-  const [tasks] = useLoad('/tasks');
   if (error) return <Problem message={error} />;
   if (!data) return <p className="muted">Loading…</p>;
   const first = (me?.name || '').split(' ')[0];
   const items = data.items || [];
-  const confirmTask = (tasks || []).find((t) => t.taskName === 'Confirm equipment received');
   return (
     <section>
       <Flash />
@@ -267,11 +265,7 @@ export function EmployeeDashboard({ me }) {
           {items.length > 0 ? (
             <>
               <ChecklistProgress items={items} />
-              <ChecklistSections items={items} onChanged={reload} showOwnerInHeader={false}
-                                 canTick={(item) => item.itemKind !== 'EQUIPMENT_CONFIRM'} />
-              {confirmTask && (
-                <div className="alert info">Your equipment was issued. <a className="lnk" href={`#/tasks/${confirmTask.id}`}>Confirm equipment received</a></div>
-              )}
+              <ChecklistSections items={items} onChanged={reload} showOwnerInHeader={false} canTick={() => true} />
             </>
           ) : (
             <div className="card empty">No onboarding tasks. Your tasks are under <a className="lnk" href="#/tasks">My Tasks</a>.</div>

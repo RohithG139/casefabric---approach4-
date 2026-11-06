@@ -1,12 +1,12 @@
 <case xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="development.case" name="development" expressionLanguage="spel" guid="_LvCNu">
     <documentation textFormat="text/plain">
-        <text><![CDATA[Onboarding and development plan cycle, one case per employee. Business data (personal details, goal descriptions, comments, notes, summaries, every plan round) lives in the devplan database; the case file holds what the sentries and the case history need (ids, status fields, decisions, goal titles). The task-models say which is which (x-store, x-case). The case is continuous: it has no completion milestone.]]></text>
+        <text><![CDATA[Onboarding and development plan cycle, one case per employee. The case file is the system of record for business content (the development plan, its history in PreviousRounds, equipment, the onboarding checklist); the devplan database holds only personal data (x-pii, see dv_employee_details.humantask) and shared, cross-case configuration (department, job title and checklist-template lookups). The case is continuous: it has no completion milestone.]]></text>
     </documentation>
     <caseFileModel typeRef="development.type"/>
     <casePlanModel id="cm_development.case_development_0" name="Development" autoComplete="false">
         <stage id="pi_onboarding" name="0 · Onboarding" autoComplete="false">
             <documentation textFormat="text/plain">
-                <text><![CDATA[Only for new joiners: starts when the devplan backend creates the Onboarding case file item right after "+ New Employee" started the case. Cases started for an existing employee never get that item, so this stage never starts for them. Business data (personal details, IT request, checklist, assets) lives in the devplan database; the case file holds only flags.]]></text>
+                <text><![CDATA[Only for new joiners: starts when the devplan backend creates the Onboarding case file item right after "+ New Employee" started the case. Cases started for an existing employee never get that item, so this stage never starts for them. The IT request, checklist and issued assets live in the case file (Onboarding); only the employee's personal details stay in the devplan database.]]></text>
             </documentation>
             <entryCriterion id="ec_onboarding_0">
                 <caseFileItemOnPart id="op_onboarding_0_0" sourceRef="Onboarding">
@@ -28,45 +28,19 @@
                         <body><![CDATA[replace]]></body>
                     </bindingRefinement>
                 </outputs>
+                <outputs id="_LvCNu_20" name="swag" bindingRef="swag">
+                    <bindingRefinement id="_LvCNu_21">
+                        <body><![CDATA[replace]]></body>
+                    </bindingRefinement>
+                </outputs>
                 <extensionElements mustUnderstand="false">
                     <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_employee_details.humantask">
                         <parameterMapping id="pm_employee_details_in_Employee" sourceRef="in_employee_details_Employee" targetRef="i_Employee__employee_details"/>
                         <parameterMapping id="pm_employee_details_out_Employee" sourceRef="o_Employee__employee_details" targetRef="out_employee_details_Employee"/>
+                        <parameterMapping id="_LvCNu_18" sourceRef="swag__G4OQ" targetRef="_LvCNu_20"/>
                     </cafienne:implementation>
                 </extensionElements>
             </humanTask>
-            <processTask id="pi_mail_welcome" name="Send welcome e-mail" isBlocking="true" processRef="dv_mail_welcome.process">
-                <documentation textFormat="text/plain">
-                    <text><![CDATA[Mail to the new joiner (private e-mail): username and login link. Keycloak sends the set-password link separately.]]></text>
-                </documentation>
-                <entryCriterion id="ec_mail_welcome_0">
-                    <planItemOnPart id="op_mail_welcome_0_0" sourceRef="pi_employee_details">
-                        <standardEvent>complete</standardEvent>
-                    </planItemOnPart>
-                </entryCriterion>
-                <inputs id="in_mail_welcome_Employee" name="Employee" bindingRef="Employee"/>
-                <inputs id="in_mail_welcome_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
-                <parameterMapping id="pm_mail_welcome_employeeName" sourceRef="in_mail_welcome_Employee" targetRef="employeeName">
-                    <transformation>
-                        <body><![CDATA[Employee.name]]></body>
-                    </transformation>
-                </parameterMapping>
-                <parameterMapping id="pm_mail_welcome_employeeEmail" sourceRef="in_mail_welcome_Onboarding" targetRef="employeeEmail">
-                    <transformation>
-                        <body><![CDATA[Onboarding.employeeEmail]]></body>
-                    </transformation>
-                </parameterMapping>
-                <parameterMapping id="pm_mail_welcome_username" sourceRef="in_mail_welcome_Onboarding" targetRef="username">
-                    <transformation>
-                        <body><![CDATA[Onboarding.username]]></body>
-                    </transformation>
-                </parameterMapping>
-                <parameterMapping id="pm_mail_welcome_managerName" sourceRef="in_mail_welcome_Employee" targetRef="managerName">
-                    <transformation>
-                        <body><![CDATA[Employee.managerName]]></body>
-                    </transformation>
-                </parameterMapping>
-            </processTask>
             <humanTask id="pi_it_request" name="IT &amp; equipment request" isBlocking="true" performerRef="cr_dv_HR">
                 <documentation textFormat="text/plain">
                     <text><![CDATA[Onboarding step 2. Owner: HR. Send to IT starts the Equipment request.]]></text>
@@ -95,15 +69,9 @@
                     </planItemOnPart>
                 </entryCriterion>
                 <inputs id="in_mail_it_request_Employee" name="Employee" bindingRef="Employee"/>
-                <inputs id="in_mail_it_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
-                <parameterMapping id="pm_mail_it_request_employeeName" sourceRef="in_mail_it_request_Employee" targetRef="employeeName">
+                <parameterMapping id="pm_mail_it_request_employeeId" sourceRef="in_mail_it_request_Employee" targetRef="employeeId">
                     <transformation>
-                        <body><![CDATA[Employee.name]]></body>
-                    </transformation>
-                </parameterMapping>
-                <parameterMapping id="pm_mail_it_request_itEmail" sourceRef="in_mail_it_request_Onboarding" targetRef="itEmail">
-                    <transformation>
-                        <body><![CDATA[Onboarding.itEmail]]></body>
+                        <body><![CDATA[Employee.employeeId]]></body>
                     </transformation>
                 </parameterMapping>
             </processTask>
@@ -117,25 +85,13 @@
                     </planItemOnPart>
                 </entryCriterion>
                 <inputs id="in_equipment_request_Employee" name="Employee" bindingRef="Employee"/>
+                <inputs id="in_equipment_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
+                <outputs id="out_equipment_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
                 <extensionElements mustUnderstand="false">
                     <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_equipment_request.humantask">
                         <parameterMapping id="pm_equipment_request_in_Employee" sourceRef="in_equipment_request_Employee" targetRef="i_Employee__equipment_request"/>
-                    </cafienne:implementation>
-                </extensionElements>
-            </humanTask>
-            <humanTask id="pi_confirm_equipment" name="Confirm equipment received" isBlocking="true" performerRef="cr_dv_Employee">
-                <documentation textFormat="text/plain">
-                    <text><![CDATA[Owner: the new employee.]]></text>
-                </documentation>
-                <entryCriterion id="ec_confirm_equipment_0">
-                    <planItemOnPart id="op_confirm_equipment_0_0" sourceRef="pi_equipment_request">
-                        <standardEvent>complete</standardEvent>
-                    </planItemOnPart>
-                </entryCriterion>
-                <inputs id="in_confirm_equipment_Employee" name="Employee" bindingRef="Employee"/>
-                <extensionElements mustUnderstand="false">
-                    <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_confirm_equipment.humantask">
-                        <parameterMapping id="pm_confirm_equipment_in_Employee" sourceRef="in_confirm_equipment_Employee" targetRef="i_Employee__confirm_equipment"/>
+                        <parameterMapping id="pm_equipment_request_in_Onboarding" sourceRef="in_equipment_request_Onboarding" targetRef="i_Onboarding__equipment_request"/>
+                        <parameterMapping id="pm_equipment_request_out_Onboarding" sourceRef="o_Onboarding__equipment_request" targetRef="out_equipment_request_Onboarding"/>
                     </cafienne:implementation>
                 </extensionElements>
             </humanTask>
@@ -175,20 +131,9 @@
                 </planItemOnPart>
             </entryCriterion>
             <inputs id="in_mail_onboarded_Employee" name="Employee" bindingRef="Employee"/>
-            <inputs id="in_mail_onboarded_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
-            <parameterMapping id="pm_mail_onboarded_employeeName" sourceRef="in_mail_onboarded_Employee" targetRef="employeeName">
+            <parameterMapping id="pm_mail_onboarded_employeeId" sourceRef="in_mail_onboarded_Employee" targetRef="employeeId">
                 <transformation>
-                    <body><![CDATA[Employee.name]]></body>
-                </transformation>
-            </parameterMapping>
-            <parameterMapping id="pm_mail_onboarded_hrEmail" sourceRef="in_mail_onboarded_Onboarding" targetRef="hrEmail">
-                <transformation>
-                    <body><![CDATA[Onboarding.hrEmail]]></body>
-                </transformation>
-            </parameterMapping>
-            <parameterMapping id="pm_mail_onboarded_managerEmail" sourceRef="in_mail_onboarded_Onboarding" targetRef="managerEmail">
-                <transformation>
-                    <body><![CDATA[Onboarding.managerEmail]]></body>
+                    <body><![CDATA[Employee.employeeId]]></body>
                 </transformation>
             </parameterMapping>
         </processTask>
@@ -241,7 +186,7 @@
                     </itemControl>
                     <humanTask id="pi_define_plan" name="Define goals &amp; plan" isBlocking="true" performerRef="cr_dv_Employee">
                         <documentation textFormat="text/plain">
-                            <text><![CDATA[Owner: Employee. Starts empty in every round (earlier rounds are in the devplan database). The manager may also fill it in (delegation).]]></text>
+                            <text><![CDATA[Owner: Employee. Starts empty in every round (earlier rounds are archived in PreviousRounds). The manager may also fill it in (delegation).]]></text>
                         </documentation>
                         <inputs id="in_define_plan_Employee" name="Employee" bindingRef="Employee"/>
                         <outputs id="out_define_plan_Plan" name="Plan" bindingRef="Plan">
@@ -567,7 +512,7 @@
                     </humanTask>
                     <humanTask id="pi_evaluate_results" name="Evaluate &amp; document results" isBlocking="true" performerRef="cr_dv_Manager">
                         <documentation textFormat="text/plain">
-                            <text><![CDATA[Owner: Manager. On complete the devplan backend closes the round in its database (earlier rounds live there).]]></text>
+                            <text><![CDATA[Owner: Manager. On complete the devplan backend archives the finished round into PreviousRounds.]]></text>
                         </documentation>
                         <entryCriterion id="ec_evaluate_results_0">
                             <planItemOnPart id="op_evaluate_results_0_0" sourceRef="pi_self_assessment">
@@ -645,21 +590,9 @@
             "type": "string",
             "title": "Employee number"
           },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "jobTitle": {
-            "type": "string",
-            "title": "Job title"
-          },
           "managerId": {
             "type": "string",
             "title": "Manager number"
-          },
-          "managerName": {
-            "type": "string",
-            "title": "Manager"
           },
           "trigger": {
             "type": "string",
@@ -682,7 +615,6 @@
         },
         "required": [
           "employeeId",
-          "name",
           "managerId",
           "trigger"
         ]

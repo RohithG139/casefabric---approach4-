@@ -1,31 +1,32 @@
 package com.devplan.forms;
 
 import java.util.Set;
+import java.util.UUID;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 
+import com.devplan.engine.EngineClient;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * The "x-on-complete" actions of the development plan forms. Each moves the round (dev_round.status) on and returns
- * the case-file fields the backend owns: the round id and number on Plan, who decided on Approval, the activity's id,
- * the self-assessment's submitted flag. The status flow: DRAFT -> SUBMITTED -> APPROVED | REJECTED (-> SUBMITTED
- * again after Revise plan) -> EVALUATING (a review with "plan completed") -> CLOSED (evaluation done).
+ * The "x-on-complete" actions of the development plan forms. The plan's round-by-round lifecycle (submitted ->
+ * approved/rejected -> evaluating -> closed) is tracked by the case plan's own stages and milestones, driven directly
+ * by Approval.decision, ProgressReviews.planCompleted and Evaluation.furtherDevelopment in the case file - there is no
+ * separate status to maintain here. The only real work left is archiving a closed round into PreviousRounds, since
+ * Plan/Approval/SelfAssessment/Evaluation are each replaced fresh every round.
  */
 @Component
 public class DevelopmentActions implements FormActions {
     private static final Set<String> ACTIONS =
             Set.of("submitPlan", "decidePlan", "addActivity", "addReview", "submitSelfAssessment", "closeRound");
 
-    private final JdbcClient db;
+    private final EngineClient engine;
     private final ObjectMapper json;
 
-    public DevelopmentActions(JdbcClient db, ObjectMapper json) {
-        this.db = db;
+    public DevelopmentActions(EngineClient engine, ObjectMapper json) {
+        this.engine = engine;
         this.json = json;
     }
 
@@ -35,53 +36,38 @@ public class DevelopmentActions implements FormActions {
     }
 
     @Override
-    public ObjectNode run(String action, FormContext ctx) {
-        if (ctx.roundId() == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This form has no plan round");
-        }
-        long round = ctx.roundId();
+    public ObjectNode run(String action, FormContext ctx, ObjectNode caseData) {
         ObjectNode output = json.createObjectNode();
         switch (action) {
             case "submitPlan" -> {
-                status(round, "SUBMITTED");
-                int number = db.sql("SELECT round_no FROM dev_round WHERE id = ?").param(round).query(Integer.class).single();
-                output.putObject("Plan").put("roundId", String.valueOf(round)).put("roundNo", number);
+                int previousRounds = engine.get("/cases/" + ctx.caseId()).path("file").path("PreviousRounds").size();
+                output.putObject("Plan").put("roundNo", previousRounds + 1);
             }
-            case "decidePlan" -> {
-                String decision = db.sql("SELECT coalesce(approval_decision, '') FROM dev_round WHERE id = ?").param(round)
-                        .query(String.class).single();
-                db.sql("UPDATE dev_round SET status = ?, approved_by = ?, approved_at = now() WHERE id = ?")
-                        .params("APPROVED".equals(decision) ? "APPROVED" : "REJECTED", ctx.user().name(), round).update();
-                output.putObject("Approval").put("decidedBy", ctx.user().name());
-            }
-            case "addActivity" -> {
-                db.sql("UPDATE dev_activity SET created_by = coalesce(created_by, ?) WHERE task_id = ?")
-                        .params(ctx.user().name(), ctx.taskId()).update();
-                Long id = db.sql("SELECT id FROM dev_activity WHERE task_id = ?").param(ctx.taskId()).query(Long.class)
-                        .optional().orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "The activity is empty"));
-                output.putObject("Activity").put("activityId", String.valueOf(id));
-            }
-            case "addReview" -> {
-                db.sql("UPDATE dev_progress_review SET created_by = coalesce(created_by, ?) WHERE task_id = ?")
-                        .params(ctx.user().name(), ctx.taskId()).update();
-                boolean completed = db.sql("SELECT coalesce(plan_completed, false) FROM dev_progress_review WHERE task_id = ?")
-                        .param(ctx.taskId()).query(Boolean.class).optional().orElse(false);
-                if (completed) {
-                    status(round, "EVALUATING");
-                }
-            }
-            case "submitSelfAssessment" -> {
-                db.sql("UPDATE dev_round SET self_submitted_at = now() WHERE id = ?").param(round).update();
-                output.putObject("SelfAssessment").put("submitted", true);
-            }
-            case "closeRound" -> db.sql("UPDATE dev_round SET status = 'CLOSED', evaluated_by = ?, evaluated_at = now() "
-                    + "WHERE id = ?").params(ctx.user().name(), round).update();
-            default -> throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown form action " + action);
+            case "decidePlan" -> output.putObject("Approval").put("decidedBy", ctx.user().userId()); // opaque id, not a name
+            case "addActivity" -> output.putObject("Activity").put("activityId", UUID.randomUUID().toString());
+            case "addReview" -> { /* the plan-performed milestone reacts to ProgressReviews.planCompleted itself */ }
+            case "submitSelfAssessment" -> output.putObject("SelfAssessment").put("submitted", true);
+            case "closeRound" -> archiveRound(ctx, caseData);
+            default -> { /* unreachable: handles() already filtered to the known actions above */ }
         }
         return output;
     }
 
-    private void status(long round, String status) {
-        db.sql("UPDATE dev_round SET status = ? WHERE id = ?").params(status, round).update();
+    /** Snapshots the round that just evaluated (Plan, Approval, Activities, ProgressReviews, SelfAssessment,
+     * Evaluation - all already present in the task's own data) onto the case file's PreviousRounds. */
+    private void archiveRound(FormContext ctx, ObjectNode caseData) {
+        JsonNode plan = caseData.path("Plan");
+        ObjectNode snapshot = json.createObjectNode();
+        snapshot.put("roundNo", plan.path("roundNo").asInt(0));
+        snapshot.set("period", plan.path("period"));
+        ObjectNode snapshotPlan = snapshot.putObject("plan");
+        snapshotPlan.set("period", plan.path("period"));
+        snapshotPlan.set("goals", plan.path("goals"));
+        snapshot.set("approval", caseData.path("Approval"));
+        snapshot.set("activities", caseData.path("Activities"));
+        snapshot.set("progressReviews", caseData.path("ProgressReviews"));
+        snapshot.set("selfAssessment", caseData.path("SelfAssessment"));
+        snapshot.set("evaluation", caseData.path("Evaluation"));
+        engine.post("/cases/" + ctx.caseId() + "/casefile/create/PreviousRounds", snapshot);
     }
 }

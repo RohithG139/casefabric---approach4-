@@ -2,11 +2,9 @@ package com.devplan.api;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.core.io.ClassPathResource;
@@ -38,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Onboarding of a new joiner (FRD-02, reduced): "+ New Employee" starts the development case with its Onboarding
  * stage; the steps themselves are the engine's human tasks (forms via TaskController). This controller serves what
- * is not a form: the wizard overview, the checklist (app DB) and completing onboarding.
+ * is not a form: the wizard overview, the checklist (case file) and completing onboarding.
  */
 @RestController
 @RequestMapping("/api/onboarding")
@@ -75,7 +73,6 @@ public class OnboardingController {
         String employeeId = UUID.randomUUID().toString();
         db.sql("INSERT INTO employee (employee_id, employee_code, stage) "
                 + "VALUES (?, 'E-' || lpad(nextval('employee_code_seq')::text, 4, '0'), 'DRAFT')").param(employeeId).update();
-        db.sql("INSERT INTO onboarding (employee_id) VALUES (?)").param(employeeId).update();
         String caseId;
         try {
             Map<String, Object> body = Map.of(
@@ -90,7 +87,7 @@ public class OnboardingController {
                             "groups", List.of()));
             caseId = engine.post("/cases", body).path("caseInstanceId").asText();
             engine.post("/cases/" + caseId + "/casefile/create/Onboarding",
-                    Map.of("itRequestSent", false, "mandatoryItemsDone", false, "completed", false));
+                    Map.of("itRequestSent", false, "mandatoryItemsDone", false, "completed", false, "status", "DRAFT"));
         } catch (RuntimeException e) {
             db.sql("DELETE FROM employee WHERE employee_id = ?").param(employeeId).update();
             throw e;
@@ -110,15 +107,15 @@ public class OnboardingController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only HR and the IT admin see onboarding");
         }
         Employee employee = employee(employeeId);
-        Map<String, Object> onboarding = db.sql("SELECT status, it_status, it_sent_at, it_completed_at FROM onboarding "
-                + "WHERE employee_id = ?").param(employeeId).query((rs, n) -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("status", rs.getString(1));
-                    m.put("itStatus", rs.getString(2));
-                    m.put("itSentAt", rs.getString(3));
-                    m.put("itCompletedAt", rs.getString(4));
-                    return m;
-                }).optional().orElse(Map.of());
+        JsonNode onboardingFile = employee.caseId() == null ? null
+                : engine.get("/cases/" + employee.caseId()).path("file").path("Onboarding");
+        Map<String, Object> onboarding = new LinkedHashMap<>();
+        if (onboardingFile != null) {
+            onboarding.put("status", onboardingFile.path("status").asText(null));
+            onboarding.put("itStatus", onboardingFile.path("itStatus").asText(null));
+            onboarding.put("itSentAt", onboardingFile.path("itSentAt").asText(null));
+            onboarding.put("itCompletedAt", onboardingFile.path("itCompletedAt").asText(null));
+        }
 
         List<Map<String, Object>> steps = new ArrayList<>();
         if (employee.caseId() != null) {
@@ -185,14 +182,10 @@ public class OnboardingController {
 
     /** ONB-04: tick an item. HR may tick any item; others only the items of their own role (and their own record). */
     @PostMapping("/checklist/{itemId}/done")
-    public void tick(@PathVariable long itemId) {
+    public void tick(@PathVariable String itemId) {
         CurrentUser user = CurrentUser.get();
-        Item item = checklists.get(itemId);
-        if ("EQUIPMENT_CONFIRM".equals(item.itemKind()) && !user.has("hr")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Use the Confirm equipment received task for this item");
-        }
         if (!user.has("hr")) {
-            boolean own = checklists.openFor(user, myEmployeeId(user)).stream().anyMatch(i -> i.id() == itemId);
+            boolean own = checklists.openFor(user, myEmployeeId(user)).stream().anyMatch(i -> i.id().equals(itemId));
             if (!own) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your checklist item");
             }
@@ -224,33 +217,26 @@ public class OnboardingController {
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Onboarding cannot be completed in this case right now");
         }
-        engine.put("/cases/" + caseId + "/casefile/update/Onboarding", Map.of("mandatoryItemsDone", true, "completed", true));
+        engine.put("/cases/" + caseId + "/casefile/update/Onboarding", Map.of("mandatoryItemsDone", true, "completed", true,
+                "status", "COMPLETED", "completedAt", java.time.OffsetDateTime.now().toString(),
+                "completedBy", user.userId())); // opaque id, not a name
         engine.post("/cases/" + caseId + "/planitems/" + event + "/Occur", null);
-        db.sql("UPDATE onboarding SET status = 'COMPLETED', completed_at = now(), completed_by = ? WHERE employee_id = ?")
-                .params(user.name() == null ? user.username() : user.name(), employeeId).update();
         db.sql("UPDATE employee SET stage = 'ACTIVE' WHERE employee_id = ?").param(employeeId).update();
     }
 
     /**
-     * ONB-03: the user's own open checklist items, for My Tasks. Items of an employee for whom the user has an open
-     * task are left out: that task shows them as checkboxes (e.g. the IT admin ticks the accounts inside Equipment
-     * request), so each person is one task in the list. HR items are always listed (HR tasks show no checklist).
+     * ONB-03: the user's own open checklist items, for My Tasks. The IT admin's items are never listed here, even
+     * before the Equipment request task exists: they are only ever actioned from inside that one task (issuing an
+     * asset ticks the equipment items; the accounts are ticked on its embedded checklist), so the IT admin always
+     * sees exactly one task per new joiner, never loose rows.
      */
     @GetMapping("/items")
     public List<Item> myItems() {
         CurrentUser user = CurrentUser.get();
-        List<Item> items = checklists.openFor(user, myEmployeeId(user));
-        Set<String> casesWithTask = new HashSet<>();
-        Set<String> roles = user.caseRoles();
-        engine.get("/tasks?tenant=" + props.engine().tenant() + "&numberOfResults=500").forEach(t -> {
-            if (Set.of("Unassigned", "Assigned", "Delegated").contains(t.path("taskState").asText())
-                    && roles.contains(t.path("role").asText())
-                    && !"HR".equals(Checklists.ownerRoleOfCaseRole(t.path("role").asText()))) {
-                casesWithTask.add(t.path("caseInstanceId").asText());
-            }
-        });
-        return items.stream().filter(i -> employees.byId(i.employeeId())
-                .map(e -> !casesWithTask.contains(e.caseId())).orElse(true)).toList();
+        if ("IT_ADMIN".equals(Checklists.ownerRole(user))) {
+            return List.of();
+        }
+        return checklists.openFor(user, myEmployeeId(user));
     }
 
     /** The new joiner's dashboard (Screen 9): own items only (ONB-07), team and equipment. */
@@ -274,16 +260,19 @@ public class OnboardingController {
                     t.put("jobTitle", rs.getString(4));
                     return t;
                 }).single());
-        result.put("assets", db.sql("SELECT asset_type, model, asset_number, issued_on::text, received FROM asset "
-                + "WHERE employee_id = ? ORDER BY id").param(me.employeeId()).query((rs, n) -> {
-                    Map<String, Object> a = new LinkedHashMap<>();
-                    a.put("assetType", rs.getString(1));
-                    a.put("model", rs.getString(2));
-                    a.put("assetNumber", rs.getString(3));
-                    a.put("issuedOn", rs.getString(4));
-                    a.put("received", rs.getBoolean(5));
-                    return a;
-                }).list());
+        List<Map<String, Object>> assets = new ArrayList<>();
+        if (me.caseId() != null) {
+            engine.get("/cases/" + me.caseId()).path("file").path("Onboarding").path("Assets").forEach(a -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("assetType", a.path("assetType").asText(null));
+                m.put("model", a.path("model").asText(null));
+                m.put("assetNumber", a.path("assetNumber").asText(null));
+                m.put("issuedOn", a.path("issuedOn").asText(null));
+                m.put("received", a.path("received").asBoolean(false));
+                assets.add(m);
+            });
+        }
+        result.put("assets", assets);
         return result;
     }
 

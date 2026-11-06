@@ -18,24 +18,20 @@
       "Plan": {
         "type": "object",
         "title": "Development plan",
-        "x-store": "dev_round",
         "properties": {
           "period": {
             "type": "string",
-            "title": "Plan period",
-            "x-case": true
+            "title": "Plan period"
           },
           "goals": {
             "type": "array",
             "title": "Goals",
-            "x-store": "dev_goal",
             "items": {
               "type": "object",
               "properties": {
                 "title": {
                   "type": "string",
-                  "title": "Goal",
-                  "x-case": true
+                  "title": "Goal"
                 },
                 "type": {
                   "type": "string",
@@ -57,8 +53,7 @@
                       "const": "CAREER",
                       "title": "Career"
                     }
-                  ],
-                  "x-case": true
+                  ]
                 },
                 "description": {
                   "type": "string",
@@ -71,8 +66,7 @@
                 "targetDate": {
                   "type": "string",
                   "title": "Target date",
-                  "format": "date",
-                  "x-case": true
+                  "format": "date"
                 }
               }
             }
@@ -83,7 +77,6 @@
       "Approval": {
         "type": "object",
         "title": "Decision",
-        "x-store": "dev_round",
         "x-on-complete": "decidePlan",
         "required": [
           "decision"
@@ -92,8 +85,6 @@
           "decision": {
             "type": "string",
             "title": "Decision",
-            "x-column": "approval_decision",
-            "x-case": true,
             "oneOf": [
               {
                 "const": "APPROVED",
@@ -107,8 +98,7 @@
           },
           "comments": {
             "type": "string",
-            "title": "Comments",
-            "x-column": "approval_comments"
+            "title": "Comments"
           }
         }
       }

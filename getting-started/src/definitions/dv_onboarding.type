@@ -3,10 +3,20 @@
         <property id="sp_Onboarding_itRequestSent" name="itRequestSent" type="boolean" multiplicity="ZeroOrOne" />
         <property id="sp_Onboarding_mandatoryItemsDone" name="mandatoryItemsDone" type="boolean" multiplicity="ZeroOrOne" />
         <property id="sp_Onboarding_completed" name="completed" type="boolean" multiplicity="ZeroOrOne" />
-        <property id="sp_Onboarding_employeeEmail" name="employeeEmail" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Onboarding_username" name="username" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Onboarding_managerEmail" name="managerEmail" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Onboarding_hrEmail" name="hrEmail" type="string" multiplicity="ZeroOrOne" />
-        <property id="sp_Onboarding_itEmail" name="itEmail" type="string" multiplicity="ZeroOrOne" />
+        <!-- No e-mail addresses or usernames here: the mail process tasks trigger the devplan backend with just
+             Employee.employeeId, and the backend resolves real recipient addresses from the employee directory (DB)
+             at send time - see dv_mail_welcome.process / dv_mail_it_request.process / dv_mail_onboarded.process. -->
+        <property id="sp_Onboarding_status" name="status" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_itRequest" name="ITRequest" type="dv_itrequest.type" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_itStatus" name="itStatus" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_itSentAt" name="itSentAt" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_itCompletedAt" name="itCompletedAt" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_equipmentReceived" name="equipmentReceived" type="boolean" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_equipmentNote" name="equipmentNote" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_equipmentConfirmedAt" name="equipmentConfirmedAt" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_completedAt" name="completedAt" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_completedBy" name="completedBy" type="string" multiplicity="ZeroOrOne" />
+        <property id="sp_Onboarding_assets" name="Assets" type="dv_asset.type" multiplicity="ZeroOrMore" />
+        <property id="sp_Onboarding_checklist" name="Checklist" type="dv_checklistitem.type" multiplicity="ZeroOrMore" />
     </schema>
 </type>

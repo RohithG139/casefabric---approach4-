@@ -34,9 +34,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * completing sends the whole form back, and the engine's output mappings write the output parameters to the case
  * file. Nothing here is task-specific: a parameter added to a human task in the Case Designer needs no change here.
  * <p>
- * Business data goes through the FormLayer: properties the task-model marks with "x-store" are read from and saved
- * to the app database (merged into the form on read, split off on write), so personal data never reaches the case
- * file; fields marked "x-case" also go to the case file. Task-models without "x-store" pass through unchanged.
+ * Personal data goes through the FormLayer: properties the task-model marks with "x-pii" are read from and saved to
+ * the app database (merged into the form on read, stripped off on write), so they never reach the case file.
+ * Everything else is case-file content and passes through unchanged. Task-models without "x-pii" pass through
+ * entirely unchanged.
  */
 @RestController
 @RequestMapping("/api/tasks")
@@ -92,7 +93,7 @@ public class TaskController {
         });
 
         JsonNode model = taskModel(task);
-        FormContext ctx = forms.forRead(model, context(task));
+        FormContext ctx = context(task);
         forms.merge(model, formData, ctx);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -103,7 +104,7 @@ public class TaskController {
         }
         result.put("employeeName", employeeName != null ? employeeName : employeeName(task.path("caseInstanceId").asText()));
         result.put("employeeId", ctx.employeeId());
-        result.put("taskModel", forms.prepareModel(model, ctx));
+        result.put("taskModel", forms.prepareModel(model, ctx, formData));
         result.put("formData", formData);
         result.put("editable", forms.editableAfterCompletion(model)); // its DB data can still be changed after completion
         // While the employee is onboarding, a task shows the checklist items of its role (e.g. IT's accounts).
@@ -123,7 +124,7 @@ public class TaskController {
             employeeId = engine.get("/cases/" + caseId).path("file").path("Employee").path("employeeId").asText(null);
         }
         return new FormContext(caseId, employeeId, CurrentUser.get(), task.path("id").asText(),
-                OPEN.contains(task.path("taskState").asText()), null);
+                OPEN.contains(task.path("taskState").asText()));
     }
 
     private String employeeName(String caseId) {

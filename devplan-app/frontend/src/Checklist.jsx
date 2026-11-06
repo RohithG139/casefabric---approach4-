@@ -67,7 +67,6 @@ export function ChecklistSections({ items, canTick, onChanged, showOwnerInHeader
                   <div>
                     <span className="cl-name">{item.name}</span>
                     {item.mandatory && <span className="req-star">*</span>}
-                    {!isDone && item.itemKind === 'EQUIPMENT_CONFIRM' && <span className="cl-extra">via the Confirm equipment task</span>}
                     {!isDone && item.itemKind === 'EQUIPMENT' && <span className="cl-extra">ticked when IT issues it</span>}
                   </div>
                   <span className="cl-owner">{OWNER[item.ownerRole]}</span>

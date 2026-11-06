@@ -2,6 +2,7 @@ package com.devplan.api;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -17,7 +18,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,11 +31,8 @@ import com.devplan.config.DevplanProperties;
 import com.devplan.data.Employees;
 import com.devplan.data.Employees.Employee;
 import com.devplan.engine.EngineClient;
-import com.devplan.forms.FormContext;
-import com.devplan.forms.FormLayer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -51,17 +48,12 @@ public class CaseController {
     private final DevplanProperties props;
     private final EngineClient engine;
     private final Employees employees;
-    private final JdbcClient db;
-    private final FormLayer forms;
     private final ObjectMapper json;
 
-    public CaseController(DevplanProperties props, EngineClient engine, Employees employees, JdbcClient db,
-                          FormLayer forms, ObjectMapper json) {
+    public CaseController(DevplanProperties props, EngineClient engine, Employees employees, ObjectMapper json) {
         this.props = props;
         this.engine = engine;
         this.employees = employees;
-        this.db = db;
-        this.forms = forms;
         this.json = json;
     }
 
@@ -71,9 +63,27 @@ public class CaseController {
         List<Map<String, Object>> result = new ArrayList<>();
         for (JsonNode c : activeCases()) {
             String phase = phase(c);
-            result.add(Map.of("caseId", c.path("id").asText(), "employee", c.path("file").path("Employee"),
+            result.add(Map.of("caseId", c.path("id").asText(), "employee", enrichedEmployee(c.path("file").path("Employee")),
                     "startedAt", c.path("createdOn").asText(), "state", c.path("state").asText(), "phase", phase,
                     "round", round(c, phase)));
+        }
+        return result;
+    }
+
+    /** The case file's Employee item (just ids and the reason) with name/jobTitle/managerName resolved from the
+     * employee directory (DB) for display - the case file itself never stores them. */
+    private ObjectNode enrichedEmployee(JsonNode employeeNode) {
+        ObjectNode result = employeeNode.isObject() ? ((ObjectNode) employeeNode).deepCopy() : json.createObjectNode();
+        String employeeId = result.path("employeeId").asText(null);
+        String managerId = result.path("managerId").asText(null);
+        if (employeeId != null) {
+            employees.byId(employeeId).ifPresent(e -> {
+                result.put("name", e.name());
+                result.put("jobTitle", e.jobTitle());
+            });
+        }
+        if (managerId != null) {
+            employees.byId(managerId).ifPresent(m -> result.put("managerName", m.name()));
         }
         return result;
     }
@@ -121,12 +131,11 @@ public class CaseController {
         if (existing != null && RUNNING.contains(phase(existing))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, employee.name() + " already has a development plan running");
         }
+        // Only ids and the reason go in the case file; name/jobTitle/managerName are resolved from the employee
+        // directory (DB) whenever the UI needs to show them - see enrichedEmployee().
         Map<String, Object> employeeInput = new LinkedHashMap<>();
         employeeInput.put("employeeId", employee.employeeId());
-        employeeInput.put("name", employee.name());
-        employeeInput.put("jobTitle", employee.jobTitle());
         employeeInput.put("managerId", manager.employeeId());
-        employeeInput.put("managerName", manager.name());
         employeeInput.put("trigger", request.trigger());
         if (existing != null) {
             return Map.of("caseId", startNewRound(existing, employeeInput));
@@ -146,7 +155,7 @@ public class CaseController {
 
     private static final List<String> RUNNING = List.of("plan", "perform", "evaluate");
 
-    /** Refreshes the Employee item (new reason, current job and manager) and raises Start development plan. */
+    /** Refreshes the Employee item (new reason, current manager id) and raises Start development plan. */
     private String startNewRound(JsonNode existing, Map<String, Object> employeeInput) {
         String caseId = existing.path("id").asText();
         Set<String> activeStages = new HashSet<>();
@@ -180,7 +189,10 @@ public class CaseController {
         result.put("state", engineCase.path("state").asText());
         result.put("phase", phase);
         result.put("round", round(engineCase, phase));
-        result.put("caseFile", engineCase.path("file"));
+        JsonNode fileNode = engineCase.path("file");
+        ObjectNode caseFile = fileNode.isObject() ? ((ObjectNode) fileNode).deepCopy() : json.createObjectNode();
+        caseFile.set("Employee", enrichedEmployee(caseFile.path("Employee")));
+        result.put("caseFile", caseFile);
         result.put("planItems", engineCase.path("planitems"));
         Set<String> raisable = raisableEvents(caseId);
         result.put("raisableEvents", raisable);
@@ -320,7 +332,6 @@ public class CaseController {
         JsonNode discretionary = engine.get("/cases/" + caseId + "/discretionaryitems").path("discretionaryItems");
 
         List<Map<String, Object>> steps = new ArrayList<>();
-        List<Element> taskModels = new ArrayList<>(); // human task definitions, in model order
         Element development = byId.get(DEVELOPMENT_STAGE);
         Element developmentStage = development == null ? null : byId.get(development.getAttribute("definitionRef"));
         for (Element step : childPlanItems(developmentStage)) {
@@ -332,7 +343,6 @@ public class CaseController {
             JsonNode instance = latestByDefinition.get(stepId);
             List<Element> humanTasks = new ArrayList<>();
             collectHumanTasks(stageDef, byId, humanTasks);
-            taskModels.addAll(humanTasks.stream().map(h -> byId.get(h.getAttribute("definitionRef"))).toList());
             Set<String> taskIds = new HashSet<>();
             humanTasks.forEach(h -> taskIds.add(h.getAttribute("id")));
             List<JsonNode> stepTasks = new ArrayList<>();
@@ -364,74 +374,62 @@ public class CaseController {
             steps.add(s);
         }
 
-        ObjectNode schema = json.createObjectNode().put("type", "object");
-        ObjectNode properties = schema.putObject("properties");
-        ArrayNode groups = json.createArrayNode();
-        for (Element humanTask : taskModels) {
-            JsonNode model = taskModel(humanTask);
-            model.path("schema").path("properties").properties().forEach(p -> {
-                JsonNode property = p.getValue();
-                if (!property.hasNonNull("x-store") || forms.isTaskRow(property) || properties.has(p.getKey())) {
-                    return; // the record shows the round, not one task's row
-                }
-                ObjectNode copy = ((ObjectNode) property.deepCopy()).put("readOnly", true);
-                copy.remove("x-on-complete");
-                withoutRequired(copy); // nothing is filled in here
-                properties.set(p.getKey(), copy);
-                // One card per property; an object's fields are laid out in it directly, lists as tables.
-                ObjectNode group = groups.addObject().put("type", "Group").put("label", property.path("title").asText(p.getKey()));
-                group.putObject("options").put("readonly", true);
-                ArrayNode elements = group.putArray("elements");
-                String scope = "#/properties/" + p.getKey();
-                if ("object".equals(property.path("type").asText())) {
-                    property.path("properties").properties().forEach(f -> elements.add(control(scope + "/properties/" + f.getKey(), f.getValue())));
-                } else {
-                    elements.add(control(scope, property).put("label", false));
-                }
-            });
-        }
-        ObjectNode recordModel = json.createObjectNode();
-        recordModel.set("schema", schema);
-        recordModel.putObject("uiSchema").put("type", "VerticalLayout").set("elements", groups);
-
-        String employeeId = engineCase.path("file").path("Employee").path("employeeId").asText(null);
+        JsonNode file = engineCase.path("file");
         List<Map<String, Object>> rounds = new ArrayList<>();
-        db.sql("SELECT id, round_no, status, period, created_at FROM dev_round WHERE case_id = ? ORDER BY round_no DESC")
-                .param(caseId).query().listOfRows().forEach(row -> {
-                    ObjectNode data = json.createObjectNode();
-                    FormContext ctx = new FormContext(caseId, employeeId, CurrentUser.get(), null, false,
-                            ((Number) row.get("id")).longValue());
-                    forms.merge(recordModel, data, ctx);
-                    Map<String, Object> r = new LinkedHashMap<>(row);
-                    r.put("data", data);
-                    rounds.add(r);
-                });
+        int roundNo = 0;
+        for (JsonNode r : file.path("PreviousRounds")) {
+            roundNo++;
+            Map<String, Object> round = new LinkedHashMap<>();
+            round.put("roundNo", r.path("roundNo").asInt(roundNo));
+            round.put("status", "CLOSED");
+            round.put("period", r.path("period").asText(null));
+            round.put("plan", r.path("plan"));
+            round.put("approval", r.path("approval"));
+            round.put("activities", r.path("activities"));
+            round.put("progressReviews", r.path("progressReviews"));
+            round.put("selfAssessment", r.path("selfAssessment"));
+            round.put("evaluation", r.path("evaluation"));
+            rounds.add(round);
+        }
+        JsonNode currentPlan = file.path("Plan");
+        if (currentPlan.hasNonNull("period")) {
+            Map<String, Object> round = new LinkedHashMap<>();
+            round.put("roundNo", roundNo + 1);
+            round.put("status", currentRoundStatus(file));
+            round.put("period", currentPlan.path("period").asText(null));
+            ObjectNode plan = json.createObjectNode();
+            plan.set("period", currentPlan.path("period"));
+            plan.set("goals", currentPlan.path("goals"));
+            round.put("plan", plan);
+            round.put("approval", file.path("Approval"));
+            round.put("activities", file.path("Activities"));
+            round.put("progressReviews", file.path("ProgressReviews"));
+            round.put("selfAssessment", file.path("SelfAssessment"));
+            round.put("evaluation", file.path("Evaluation"));
+            rounds.add(round);
+        }
+        Collections.reverse(rounds); // newest first
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("caseId", caseId);
-        result.put("employee", engineCase.path("file").path("Employee"));
+        result.put("employee", enrichedEmployee(file.path("Employee")));
         result.put("phase", phase(engineCase));
         result.put("round", round(engineCase, phase(engineCase)));
         result.put("steps", steps);
-        result.put("record", Map.of("taskModel", recordModel, "rounds", rounds));
+        result.put("record", Map.of("rounds", rounds));
         return result;
     }
 
-    private ObjectNode control(String scope, JsonNode property) {
-        ObjectNode control = json.createObjectNode().put("type", "Control").put("scope", scope);
-        if ("array".equals(property.path("type").asText())) {
-            control.putObject("options").put("table", true);
-        } else if ("string".equals(property.path("type").asText()) && !property.has("oneOf") && !property.has("format")) {
-            control.putObject("options").put("multi", true);
+    /** The status of the round still running, derived from the case file (no stored status): APPROVED/REJECTED once
+     * decided, EVALUATING once a progress review marks the plan performed, SUBMITTED until then. */
+    private static String currentRoundStatus(JsonNode file) {
+        for (JsonNode r : file.path("ProgressReviews")) {
+            if (r.path("planCompleted").asBoolean(false)) {
+                return "EVALUATING";
+            }
         }
-        return control;
-    }
-
-    private static void withoutRequired(JsonNode schema) {
-        if (schema instanceof ObjectNode object) {
-            object.remove(List.of("required", "minItems"));
-            object.elements().forEachRemaining(CaseController::withoutRequired);
-        }
+        String decision = file.path("Approval").path("decision").asText("");
+        return decision.isEmpty() ? "SUBMITTED" : decision; // APPROVED or REJECTED
     }
 
     /** The plan items and discretionary items directly in a stage definition, in model order. */
@@ -470,18 +468,6 @@ public class CaseController {
         }
     }
 
-    private JsonNode taskModel(Element humanTask) {
-        NodeList models = humanTask == null ? null : humanTask.getElementsByTagName("task-model");
-        if (models == null || models.getLength() == 0) {
-            return json.createObjectNode();
-        }
-        try {
-            return json.readTree(models.item(0).getTextContent());
-        } catch (Exception e) {
-            return json.createObjectNode();
-        }
-    }
-
     /** True when the plan item sits (at any depth) in the stage instance with this id. */
     private static boolean within(JsonNode item, String stageId, Map<String, JsonNode> instances) {
         if (item.path("id").asText().equals(stageId)) {
@@ -498,13 +484,10 @@ public class CaseController {
         return false;
     }
 
-    /** The plan round number from the devplan DB; a plan that runs but has no round saved yet is the next one. */
-    private int round(JsonNode engineCase, String phase) {
-        List<Map<String, Object>> latest = db.sql("SELECT round_no, status FROM dev_round WHERE case_id = ? "
-                + "ORDER BY round_no DESC LIMIT 1").param(engineCase.path("id").asText()).query().listOfRows();
-        int number = latest.isEmpty() ? 0 : ((Number) latest.get(0).get("round_no")).intValue();
-        boolean closed = latest.isEmpty() || "CLOSED".equals(latest.get(0).get("status"));
-        return RUNNING.contains(phase) && closed ? number + 1 : number;
+    /** The plan round number: closed rounds already archived in PreviousRounds, plus one more while a round runs. */
+    private static int round(JsonNode engineCase, String phase) {
+        int closed = engineCase.path("file").path("PreviousRounds").size();
+        return RUNNING.contains(phase) ? closed + 1 : closed;
     }
 
     /** Where the current plan round is: plan, perform or evaluate; onboarding while a new joiner is onboarded;

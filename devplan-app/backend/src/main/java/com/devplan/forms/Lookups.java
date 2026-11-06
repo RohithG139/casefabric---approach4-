@@ -1,14 +1,18 @@
 package com.devplan.forms;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
- * Option lists for task-model fields marked "x-options": the field gets a "oneOf" of {const, title} from the app DB,
- * so dropdowns follow the data without changing the form. A new list = one entry here.
+ * Option lists for task-model fields marked "x-options": the field gets a "oneOf" of {const, title} so dropdowns
+ * follow the data without changing the form. A new list = one entry here. "goals" reads the plan's own goal titles
+ * from the form's current data (the case file); the others are the app's employee directory (not case content).
  */
 @Component
 public class Lookups {
@@ -22,12 +26,17 @@ public class Lookups {
     }
 
     /** The options of a lookup for a form: buddies leave out the employee the form is about; goals are the titles of
-     * the goals of the form's plan round. */
-    public List<Option> options(String lookup, FormContext ctx) {
+     * the goals already in this form's Plan. */
+    public List<Option> options(String lookup, FormContext ctx, JsonNode formData) {
         if ("goals".equals(lookup)) {
-            return ctx.roundId() == null ? List.of() : db.sql("SELECT title, title FROM dev_goal WHERE round_id = ? "
-                    + "AND title IS NOT NULL ORDER BY seq").param(ctx.roundId())
-                    .query((rs, n) -> new Option(rs.getString(1), rs.getString(2))).list();
+            List<Option> result = new ArrayList<>();
+            formData.path("Plan").path("goals").forEach(g -> {
+                String title = g.path("title").asText("");
+                if (!title.isBlank()) {
+                    result.add(new Option(title, title));
+                }
+            });
+            return result;
         }
         String employeeId = ctx.employeeId();
         Map<String, String> sql = Map.of(

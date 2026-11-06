@@ -11,16 +11,38 @@
 #
 # Every setting can be overridden from the shell or from a .env file next to this file.
 services:
+  devplan-db:
+    image: postgres:16
+    container_name: devplan-db
+    hostname: devplan-db
+    environment:
+      POSTGRES_USER: ${DEVPLAN_DB_USER:-devplan}
+      POSTGRES_PASSWORD: ${DEVPLAN_DB_PASSWORD:-devplan}
+      POSTGRES_DB: ${DEVPLAN_DB_NAME:-devplan}
+    volumes:
+      - devplan-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DEVPLAN_DB_USER:-devplan}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - devplan
+
   backend:
     build: ./backend
     image: devplan-backend:latest
     container_name: devplan-backend
     hostname: backend
+    depends_on:
+      devplan-db:
+        condition: service_healthy
     environment:
-      # Employee directory, schema "devplan" in the CaseFabric Postgres (created by Flyway on start).
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://case-engine-db-postgres:5432/postgres}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
+      # Employee directory, schema "devplan", own dedicated Postgres container (devplan-db).
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://devplan-db:5432/devplan}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-devplan}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-devplan}
       # Keycloak as reached from this container; tokens carry the public issuer the browser uses.
       DEVPLAN_KEYCLOAK_INTERNAL_URL: ${DEVPLAN_KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/realms/devplan}
       DEVPLAN_KEYCLOAK_ISSUER: ${DEVPLAN_KEYCLOAK_ISSUER:-http://localhost:8280/realms/devplan}
@@ -69,7 +91,10 @@ services:
       - devplan
 
 networks:
-  devplan: {} # frontend <-> backend
+  devplan: {} # frontend <-> backend <-> devplan-db
   casefabric:
     external: true
     name: casefabric_network # created by ../getting-started/docker-compose.yml
+
+volumes:
+  devplan-db-data: {}

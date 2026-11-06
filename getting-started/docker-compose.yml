@@ -112,13 +112,11 @@ services:
   case-engine:
     image: cafienne/engine:1.1.35
     labels:
-      component: case-engine    
-    networks: 
+      component: case-engine
+    networks:
       - getting_started_network
     expose:
       - 2027
-    ports:
-      - "2027:2027"
     hostname: case-engine
     container_name: case-engine
     healthcheck:
@@ -154,6 +152,26 @@ services:
       - case-engine-db-postgres
       - keycloak
       - mailcatcher
+
+  # Fronts case-engine on the host-facing port. The engine always bakes its own
+  # bind address (0.0.0.0, required for Docker port publishing) into the OpenAPI
+  # "servers" URL it serves at /api-docs/swagger.json, which breaks Swagger UI's
+  # "Try it out" in the browser. This proxy passes every request through
+  # unchanged except that one response, where it rewrites the host to localhost.
+  swagger-proxy:
+    image: nginx:alpine
+    labels:
+      component: swagger-proxy
+    networks:
+      - getting_started_network
+    ports:
+      - "2027:2027"
+    hostname: swagger-proxy
+    container_name: swagger-proxy
+    volumes:
+      - ./src/nginx/swagger-proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - case-engine
 
   # The Development plan app runs from its own compose file (../devplan-app/docker-compose.yml) and joins the
   # network below to reach keycloak, case-engine and case-engine-db-postgres.

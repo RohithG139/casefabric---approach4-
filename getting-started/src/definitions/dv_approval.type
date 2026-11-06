@@ -1,6 +1,7 @@
 <type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_approval.type" name="dv_approval">
     <schema>
         <property id="sp_Approval_decision" name="decision" type="string" multiplicity="ZeroOrOne"/>
+        <property id="sp_Approval_comments" name="comments" type="string" multiplicity="ZeroOrOne"/>
         <property id="sp_Approval_decidedBy" name="decidedBy" type="string" multiplicity="ZeroOrOne"/>
     </schema>
 </type>

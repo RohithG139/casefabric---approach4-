@@ -1,7 +1,7 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
     <cafienne:implementation name="ITRequest" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Onboarding step 2 - IT & equipment request. Owner: HR. The request is business data in the devplan database (x-store "onboarding"); on complete the backend marks it sent and returns Onboarding.itRequestSent, which starts the IT admin's Equipment request.]]></text>
+            <text><![CDATA[Onboarding step 2 - IT & equipment request. Owner: HR. The request is ordinary case-file content, written straight to Onboarding.ITRequest; on complete the backend syncs the IT admin's checklist items and marks Onboarding.itRequestSent, which starts the IT admin's Equipment request.]]></text>
         </documentation>
         <input id="i_Employee__it_request" name="Employee" typeRef="dv_employee.type"/>
         <output id="o_Onboarding__it_request" name="Onboarding" typeRef="dv_onboarding.type"/>
@@ -11,31 +11,36 @@
     "description": "What IT should prepare for the new employee. Send to IT gives the IT admin an Equipment request task.",
     "type": "object",
     "properties": {
-      "ITRequest": {
+      "Onboarding": {
         "type": "object",
-        "x-store": "onboarding",
         "x-on-complete": "sendToIt",
-        "required": ["itLaptopModel", "itReadyBy", "itDeliveryMethod", "itKeyboardLayout"],
+        "required": ["ITRequest"],
         "properties": {
-          "itLaptopModel": { "type": "string", "title": "Laptop", "enum": ["MacBook Pro 14\"", "MacBook Air 13\"", "Dell XPS 15", "Windows standard"] },
-          "itReadyBy": { "type": "string", "title": "Ready by", "format": "date" },
-          "itDeliveryMethod": {
-            "type": "string", "title": "Delivery",
-            "oneOf": [
-              { "const": "OFFICE_DAY1", "title": "Pick up at office on day 1" },
-              { "const": "SHIP_HOME", "title": "Ship to home address" }
-            ]
-          },
-          "itKeyboardLayout": { "type": "string", "title": "Keyboard layout", "enum": ["US International", "Dutch"] },
-          "itAccessories": {
-            "type": "array", "title": "Accessories", "uniqueItems": true,
-            "items": { "type": "string", "enum": ["Monitor", "Keyboard &amp; mouse", "Headset", "Docking station", "Phone", "Access badge"] }
-          },
-          "itAccounts": {
-            "type": "array", "title": "Accounts &amp; software", "uniqueItems": true,
-            "items": { "type": "string", "enum": ["Microsoft 365 / e-mail", "Slack", "VPN", "Jira / Confluence", "GitHub", "Figma", "AWS console", "Docker Desktop"] }
-          },
-          "itNotes": { "type": "string", "title": "Notes for IT" }
+          "ITRequest": {
+            "type": "object",
+            "required": ["itLaptopModel", "itReadyBy", "itDeliveryMethod", "itKeyboardLayout"],
+            "properties": {
+              "itLaptopModel": { "type": "string", "title": "Laptop", "enum": ["MacBook Pro 14\"", "MacBook Air 13\"", "Dell XPS 15", "Windows standard"] },
+              "itReadyBy": { "type": "string", "title": "Ready by", "format": "date" },
+              "itDeliveryMethod": {
+                "type": "string", "title": "Delivery",
+                "oneOf": [
+                  { "const": "OFFICE_DAY1", "title": "Pick up at office on day 1" },
+                  { "const": "SHIP_HOME", "title": "Ship to home address" }
+                ]
+              },
+              "itKeyboardLayout": { "type": "string", "title": "Keyboard layout", "enum": ["US International", "Dutch"] },
+              "itAccessories": {
+                "type": "array", "title": "Accessories", "uniqueItems": true,
+                "items": { "type": "string", "enum": ["Monitor", "Keyboard &amp; mouse", "Headset", "Docking station", "Phone", "Access badge"] }
+              },
+              "itAccounts": {
+                "type": "array", "title": "Accounts &amp; software", "uniqueItems": true,
+                "items": { "type": "string", "enum": ["Microsoft 365 / e-mail", "Slack", "VPN", "Jira / Confluence", "GitHub", "Figma", "AWS console", "Docker Desktop"] }
+              },
+              "itNotes": { "type": "string", "title": "Notes for IT" }
+            }
+          }
         }
       }
     }
@@ -48,20 +53,20 @@
         "label": "Laptop &amp; hardware",
         "elements": [
           { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/ITRequest/properties/itLaptopModel" },
-            { "type": "Control", "scope": "#/properties/ITRequest/properties/itReadyBy" } ] },
+            { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itLaptopModel" },
+            { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itReadyBy" } ] },
           { "type": "HorizontalLayout", "elements": [
-            { "type": "Control", "scope": "#/properties/ITRequest/properties/itDeliveryMethod" },
-            { "type": "Control", "scope": "#/properties/ITRequest/properties/itKeyboardLayout" } ] },
-          { "type": "Control", "scope": "#/properties/ITRequest/properties/itAccessories" }
+            { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itDeliveryMethod" },
+            { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itKeyboardLayout" } ] },
+          { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itAccessories" }
         ]
       },
       {
         "type": "Group",
         "label": "Accounts &amp; software",
         "elements": [
-          { "type": "Control", "scope": "#/properties/ITRequest/properties/itAccounts" },
-          { "type": "Control", "scope": "#/properties/ITRequest/properties/itNotes", "options": { "multi": true } }
+          { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itAccounts" },
+          { "type": "Control", "scope": "#/properties/Onboarding/properties/ITRequest/properties/itNotes", "options": { "multi": true } }
         ]
       }
     ]

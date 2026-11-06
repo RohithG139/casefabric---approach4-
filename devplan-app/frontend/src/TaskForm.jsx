@@ -45,9 +45,6 @@ function withCurrentUser(value, userId) {
  */
 export default function TaskForm({ taskId, me, embedded, onDone, onCancel }) {
   const [form, loadError, reload] = useLoad(`/tasks/${taskId}`);
-  // JSONForms gets the loaded data once (initial) and reports changes into data. Feeding every change back in as its
-  // data prop races with its debounced text inputs and drops what was typed just before.
-  const [initial, setInitial] = useState(null);
   const [data, setData] = useState(null);
   const [errors, setErrors] = useState([]);
   const [submitted, setSubmitted] = useState(false);
@@ -57,7 +54,6 @@ export default function TaskForm({ taskId, me, embedded, onDone, onCancel }) {
   // The role's checklist items shown with the task; a tick updates only these, so unsaved form input stays.
   const [checklist, setChecklist] = useState(null);
   useEffect(() => {
-    setInitial(form?.formData ?? null);
     setData(form?.formData ?? null);
     setChecklist(form?.checklist ?? null);
   }, [form]);
@@ -157,7 +153,7 @@ export default function TaskForm({ taskId, me, embedded, onDone, onCancel }) {
         {kind !== 'rjsf' && (
           <form className="wf-form" onSubmit={submitJsonForms} noValidate>
             {kind === 'jsonforms' && (
-              <JsonForms schema={schema} uischema={model.uischema || model.uiSchema} data={initial} renderers={renderers}
+              <JsonForms schema={schema} uischema={model.uischema || model.uiSchema} data={data} renderers={renderers}
                          cells={materialCells} readonly={!writable || busy}
                          validationMode={submitted ? 'ValidateAndShow' : 'ValidateAndHide'}
                          onChange={({ data: changed, errors: found }) => { setData(changed); setErrors(found ?? []); }} />
