@@ -151,8 +151,10 @@
     <property name="result" type="http://www.omg.org/spec/CMMN/PropertyType/string"/>
     <property name="comments" type="http://www.omg.org/spec/CMMN/PropertyType/string"/>
   </caseFileItemDefinition>
-  <caseFileItemDefinition definitionType="http://www.omg.org/spec/CMMN/DefinitionType/Unspecified" id="development_type_swag.object" name="swag"/>
-  <caseFileItemDefinition definitionType="http://www.omg.org/spec/CMMN/DefinitionType/Unspecified" id="development_type_swag_size.value" name="size"/>
+  <caseFileItemDefinition definitionType="http://www.omg.org/spec/CMMN/DefinitionType/Unspecified" id="development_type_swag.object" name="swag">
+    <property name="size" type="http://www.omg.org/spec/CMMN/PropertyType/string"/>
+    <property name="hoodieSize" type="http://www.omg.org/spec/CMMN/PropertyType/string"/>
+  </caseFileItemDefinition>
   <caseFileItemDefinition definitionType="http://www.omg.org/spec/CMMN/DefinitionType/Unspecified" id="development.type" name="development"/>
   <case expressionLanguage="spel" guid="_LvCNu" id="development.case" name="development">
     <documentation textFormat="text/plain">
@@ -212,11 +214,7 @@
           </caseFileItem>
         </children>
       </caseFileItem>
-      <caseFileItem definitionRef="development_type_swag.object" id="swag" multiplicity="ExactlyOne" name="swag">
-        <children>
-          <caseFileItem definitionRef="development_type_swag_size.value" id="swag/size" multiplicity="ExactlyOne" name="size"/>
-        </children>
-      </caseFileItem>
+      <caseFileItem definitionRef="development_type_swag.object" id="swag" multiplicity="ZeroOrOne" name="swag"/>
     </caseFileModel>
     <casePlanModel autoComplete="false" id="cm_development.case_development_0" name="Development">
       <planItem definitionRef="onboarding" id="pi_onboarding" name="0 · Onboarding">
@@ -264,9 +262,9 @@
             <text>Onboarding step 1. Owner: HR.</text>
           </documentation>
         </planItem>
-        <planItem definitionRef="it_request" id="pi_it_request" name="IT &amp; equipment request">
+        <planItem definitionRef="it_request" id="pi_it_request" name="Equipment request by HR">
           <documentation textFormat="text/plain">
-            <text>Onboarding step 2. Owner: HR. Send to IT starts the Equipment request.</text>
+            <text>Onboarding step 2. Owner: HR. Send to IT starts the Equipment approval by IT.</text>
           </documentation>
           <entryCriterion id="ec_it_request_0" sentryRef="s_ec_it_request_0"/>
         </planItem>
@@ -276,7 +274,7 @@
           </documentation>
           <entryCriterion id="ec_mail_it_request_0" sentryRef="s_ec_mail_it_request_0"/>
         </planItem>
-        <planItem definitionRef="equipment_request" id="pi_equipment_request" name="Equipment request">
+        <planItem definitionRef="equipment_request" id="pi_equipment_request" name="Equipment approval by IT">
           <documentation textFormat="text/plain">
             <text>Owner: IT admin. Issue equipment and set up accounts.</text>
           </documentation>
@@ -342,43 +340,54 @@
             <task-model>{
   "schema": {
     "title": "Employee details",
-    "description": "Personal details and the role of the new employee. Save draft keeps the form; Save &amp; continue creates the account and opens the IT request.",
+    "description": "Personal details and the role of the new employee. Save draft keeps the form; Save &amp; continue creates the account and opens the Equipment request by HR.",
     "type": "object",
     "properties": {
-          "swag": {
-  "type": "object",
-  "title": "Welcome kit",
-  "properties": {
-    "size": {
-      "type": "string",
-      "title": "T-shirt size",
-      "oneOf": [
-        { "const": "S", "title": "S" },
-        { "const": "M", "title": "M" },
-        { "const": "L", "title": "L" },
-        { "const": "XL", "title": "XL" }
-      ]
-    }
-  }
-},
       "Details": {
         "type": "object",
         "x-pii": "employee",
         "x-on-complete": "createEmployee"
+      },
+      "swag": {
+        "type": "object",
+        "title": "Welcome kit",
+        "properties": {
+          "size": {
+            "type": "string",
+            "title": "T-shirt size",
+            "oneOf": [
+              { "const": "S", "title": "S" },
+              { "const": "M", "title": "M" },
+              { "const": "L", "title": "L" },
+              { "const": "XL", "title": "XL" }
+            ]
+          },
+          "hoodieSize": {
+            "type": "string",
+            "title": "Hoodie size",
+            "oneOf": [
+              { "const": "S", "title": "S" },
+              { "const": "M", "title": "M" },
+              { "const": "L", "title": "L" },
+              { "const": "XL", "title": "XL" }
+            ]
+          }
+        }
       }
     }
   },
   "uiSchema": {
     "type": "VerticalLayout",
     "elements": [
-      { "type": "PiiSection", "scope": "#/properties/Details" },
           {
-  "type": "Group",
-  "label": "Welcome kit",
-  "elements": [
-    { "type": "Control", "scope": "#/properties/swag/properties/size" }
-  ]
-}
+        "type": "Group",
+        "label": "Welcome kit",
+        "elements": [
+          { "type": "Control", "scope": "#/properties/swag/properties/size" },
+          { "type": "Control", "scope": "#/properties/swag/properties/hoodieSize" }
+        ]
+      },
+      { "type": "PiiSection", "scope": "#/properties/Details" }
     ]
   },
   "submitLabel": "Save &amp; continue"
@@ -389,20 +398,20 @@
           </cafienne:implementation>
         </extensionElements>
       </humanTask>
-      <humanTask id="it_request" isBlocking="true" name="IT &amp; equipment request" performerRef="cr_dv_HR">
+      <humanTask id="it_request" isBlocking="true" name="Equipment request by HR" performerRef="cr_dv_HR">
         <inputs bindingRef="Employee" id="in_it_request_Employee" name="Employee"/>
         <outputs bindingRef="Onboarding" id="out_it_request_Onboarding" name="Onboarding"/>
         <extensionElements mustUnderstand="false">
-          <cafienne:implementation class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition" humanTaskRef="dv_it_request.humantask" name="ITRequest">
+          <cafienne:implementation class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition" humanTaskRef="dv_equipment_request_hr.humantask" name="EquipmentRequestByHR">
             <documentation textFormat="text/plain">
-              <text>Onboarding step 2 - IT &amp; equipment request. Owner: HR. The request is ordinary case-file content, written straight to Onboarding.ITRequest; on complete the backend syncs the IT admin's checklist items and marks Onboarding.itRequestSent, which starts the IT admin's Equipment request.</text>
+              <text>Onboarding step 2 - Equipment request by HR. Owner: HR. The request is ordinary case-file content, written straight to Onboarding.ITRequest; on complete the backend syncs the IT admin's checklist items and marks Onboarding.itRequestSent, which starts the IT admin's Equipment approval by IT.</text>
             </documentation>
             <input id="i_Employee__it_request" name="Employee" typeRef="dv_employee.type"/>
             <output id="o_Onboarding__it_request" name="Onboarding" typeRef="dv_onboarding.type"/>
             <task-model>{
   "schema": {
-    "title": "IT &amp; equipment request",
-    "description": "What IT should prepare for the new employee. Send to IT gives the IT admin an Equipment request task.",
+    "title": "Equipment request by HR",
+    "description": "What IT should prepare for the new employee. Send to IT gives the IT admin an Equipment approval by IT task.",
     "type": "object",
     "properties": {
       "Onboarding": {
@@ -480,21 +489,21 @@
           </transformation>
         </parameterMapping>
       </processTask>
-      <humanTask id="equipment_request" isBlocking="true" name="Equipment request" performerRef="cr_dv_ITAdmin">
+      <humanTask id="equipment_request" isBlocking="true" name="Equipment approval by IT" performerRef="cr_dv_ITAdmin">
         <inputs bindingRef="Employee" id="in_equipment_request_Employee" name="Employee"/>
         <inputs bindingRef="Onboarding" id="in_equipment_request_Onboarding" name="Onboarding"/>
         <outputs bindingRef="Onboarding" id="out_equipment_request_Onboarding" name="Onboarding"/>
         <extensionElements mustUnderstand="false">
-          <cafienne:implementation class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition" humanTaskRef="dv_equipment_request.humantask" name="EquipmentRequest">
+          <cafienne:implementation class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition" humanTaskRef="dv_equipment_approval_it.humantask" name="EquipmentApprovalByIT">
             <documentation textFormat="text/plain">
-              <text>Equipment request. Owner: IT admin. Shows HR's request (read-only, from Onboarding.ITRequest in the case file) and records the issued equipment in Onboarding.Assets. Accounts are ticked on the IT checklist shown with the task.</text>
+              <text>Equipment approval by IT. Owner: IT admin. Shows HR's request (read-only, from Onboarding.ITRequest in the case file) and records the issued equipment in Onboarding.Assets. Accounts are ticked on the IT checklist shown with the task.</text>
             </documentation>
             <input id="i_Employee__equipment_request" name="Employee" typeRef="dv_employee.type"/>
             <input id="i_Onboarding__equipment_request" name="Onboarding" typeRef="dv_onboarding.type"/>
             <output id="o_Onboarding__equipment_request" name="Onboarding" typeRef="dv_onboarding.type"/>
             <task-model>{
   "schema": {
-    "title": "Equipment request",
+    "title": "Equipment approval by IT",
     "description": "Record each item you issue: it is added to the employee's assets and ticks the matching checklist item. Tick the accounts on the checklist below, then Mark setup done.",
     "type": "object",
     "properties": {

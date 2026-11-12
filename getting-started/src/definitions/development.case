@@ -41,9 +41,9 @@
                     </cafienne:implementation>
                 </extensionElements>
             </humanTask>
-            <humanTask id="pi_it_request" name="IT &amp; equipment request" isBlocking="true" performerRef="cr_dv_HR">
+            <humanTask id="pi_it_request" name="Equipment request by HR" isBlocking="true" performerRef="cr_dv_HR">
                 <documentation textFormat="text/plain">
-                    <text><![CDATA[Onboarding step 2. Owner: HR. Send to IT starts the Equipment request.]]></text>
+                    <text><![CDATA[Onboarding step 2. Owner: HR. Send to IT starts the Equipment approval by IT.]]></text>
                 </documentation>
                 <entryCriterion id="ec_it_request_0">
                     <planItemOnPart id="op_it_request_0_0" sourceRef="pi_employee_details">
@@ -53,7 +53,7 @@
                 <inputs id="in_it_request_Employee" name="Employee" bindingRef="Employee"/>
                 <outputs id="out_it_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
                 <extensionElements mustUnderstand="false">
-                    <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_it_request.humantask">
+                    <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_equipment_request_hr.humantask">
                         <parameterMapping id="pm_it_request_in_Employee" sourceRef="in_it_request_Employee" targetRef="i_Employee__it_request"/>
                         <parameterMapping id="pm_it_request_out_Onboarding" sourceRef="o_Onboarding__it_request" targetRef="out_it_request_Onboarding"/>
                     </cafienne:implementation>
@@ -75,7 +75,7 @@
                     </transformation>
                 </parameterMapping>
             </processTask>
-            <humanTask id="pi_equipment_request" name="Equipment request" isBlocking="true" performerRef="cr_dv_ITAdmin">
+            <humanTask id="pi_equipment_request" name="Equipment approval by IT" isBlocking="true" performerRef="cr_dv_ITAdmin">
                 <documentation textFormat="text/plain">
                     <text><![CDATA[Owner: IT admin. Issue equipment and set up accounts.]]></text>
                 </documentation>
@@ -88,7 +88,7 @@
                 <inputs id="in_equipment_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
                 <outputs id="out_equipment_request_Onboarding" name="Onboarding" bindingRef="Onboarding"/>
                 <extensionElements mustUnderstand="false">
-                    <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_equipment_request.humantask">
+                    <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_equipment_approval_it.humantask">
                         <parameterMapping id="pm_equipment_request_in_Employee" sourceRef="in_equipment_request_Employee" targetRef="i_Employee__equipment_request"/>
                         <parameterMapping id="pm_equipment_request_in_Onboarding" sourceRef="in_equipment_request_Onboarding" targetRef="i_Onboarding__equipment_request"/>
                         <parameterMapping id="pm_equipment_request_out_Onboarding" sourceRef="o_Onboarding__equipment_request" targetRef="out_equipment_request_Onboarding"/>

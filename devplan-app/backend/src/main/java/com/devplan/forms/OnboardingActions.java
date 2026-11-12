@@ -3,7 +3,6 @@ package com.devplan.forms;
 import java.text.Normalizer;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -150,7 +149,7 @@ public class OnboardingActions implements FormActions {
     }
 
     /** Step 2 done: the request is sent; IT's checklist becomes what was requested, and the case flag starts the IT
-     * admin's Equipment request. */
+     * admin's Equipment approval by IT. */
     private ObjectNode sendToIt(FormContext ctx, ObjectNode caseData) {
         JsonNode request = caseData.path("Onboarding").path("ITRequest");
         checklists.syncItItems(ctx.employeeId(), ctx.caseId(), names(request.path("itAccessories")), names(request.path("itAccounts")));
