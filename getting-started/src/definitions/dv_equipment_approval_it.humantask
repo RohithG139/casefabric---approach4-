@@ -1,14 +1,14 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
-    <cafienne:implementation name="EquipmentRequest" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
+    <cafienne:implementation name="EquipmentApprovalByIT" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Equipment request. Owner: IT admin. Shows HR's request (read-only, from Onboarding.ITRequest in the case file) and records the issued equipment in Onboarding.Assets. Accounts are ticked on the IT checklist shown with the task.]]></text>
+            <text><![CDATA[Equipment approval by IT. Owner: IT admin. Shows HR's request (read-only, from Onboarding.ITRequest in the case file) and records the issued equipment in Onboarding.Assets. Accounts are ticked on the IT checklist shown with the task.]]></text>
         </documentation>
         <input id="i_Employee__equipment_request" name="Employee" typeRef="dv_employee.type"/>
         <input id="i_Onboarding__equipment_request" name="Onboarding" typeRef="dv_onboarding.type"/>
         <output id="o_Onboarding__equipment_request" name="Onboarding" typeRef="dv_onboarding.type"/>
         <task-model>{
   "schema": {
-    "title": "Equipment request",
+    "title": "Equipment approval by IT",
     "description": "Record each item you issue: it is added to the employee's assets and ticks the matching checklist item. Tick the accounts on the checklist below, then Mark setup done.",
     "type": "object",
     "properties": {

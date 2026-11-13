@@ -1,5 +1,6 @@
 <type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_swag.type" name="dv_swag">
     <schema>
-        <property id="sp__5usVl_0" name="size" type="string" multiplicity="ExactlyOne"/>
+        <property id="sp__5usVl_0" name="size" type="string" multiplicity="ZeroOrOne"/>
+        <property id="sp__aFOFS_0" name="hoodieSize" type="string" multiplicity="ZeroOrOne"/>
     </schema>
 </type>

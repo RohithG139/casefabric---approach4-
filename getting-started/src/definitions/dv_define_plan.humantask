@@ -60,7 +60,7 @@
                 },
                 "successCriteria": {
                   "type": "string",
-                  "title": "How we know it is achieved"
+                  "title": "How we know  is achieved"
                 },
                 "targetDate": {
                   "type": "string",

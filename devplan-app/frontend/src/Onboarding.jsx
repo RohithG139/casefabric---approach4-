@@ -157,7 +157,7 @@ export function OnboardingWizard({ employeeId, me }) {
 
       {tab < checklistTab && (() => {
         const step = steps[tab];
-        const isIt = /IT/.test(step.name) && onboarding.itStatus; // the IT request shows where IT is
+        const isIt = step.planItemId === 'pi_it_request' && onboarding.itStatus; // Equipment request by HR shows where IT is
         return (
           <div>
             {isIt && (

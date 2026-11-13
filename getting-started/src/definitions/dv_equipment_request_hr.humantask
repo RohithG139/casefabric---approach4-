@@ -1,14 +1,14 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
-    <cafienne:implementation name="ITRequest" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
+    <cafienne:implementation name="EquipmentRequestByHR" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Onboarding step 2 - IT & equipment request. Owner: HR. The request is ordinary case-file content, written straight to Onboarding.ITRequest; on complete the backend syncs the IT admin's checklist items and marks Onboarding.itRequestSent, which starts the IT admin's Equipment request.]]></text>
+            <text><![CDATA[Onboarding step 2 - Equipment request by HR. Owner: HR. The request is ordinary case-file content, written straight to Onboarding.ITRequest; on complete the backend syncs the IT admin's checklist items and marks Onboarding.itRequestSent, which starts the IT admin's Equipment approval by IT.]]></text>
         </documentation>
         <input id="i_Employee__it_request" name="Employee" typeRef="dv_employee.type"/>
         <output id="o_Onboarding__it_request" name="Onboarding" typeRef="dv_onboarding.type"/>
         <task-model>{
   "schema": {
-    "title": "IT &amp; equipment request",
-    "description": "What IT should prepare for the new employee. Send to IT gives the IT admin an Equipment request task.",
+    "title": "Equipment request by HR",
+    "description": "What IT should prepare for the new employee. Send to IT gives the IT admin an Equipment approval by IT task.",
     "type": "object",
     "properties": {
       "Onboarding": {
@@ -29,7 +29,7 @@
                   { "const": "SHIP_HOME", "title": "Ship to home address" }
                 ]
               },
-              "itKeyboardLayout": { "type": "string", "title": "Keyboard layout", "enum": ["US International", "Dutch"] },
+              "itKeyboardLayout": { "type": "string", "title": "Keyboard type", "enum": ["US International", "Dutch"] },
               "itAccessories": {
                 "type": "array", "title": "Accessories", "uniqueItems": true,
                 "items": { "type": "string", "enum": ["Monitor", "Keyboard &amp; mouse", "Headset", "Docking station", "Phone", "Access badge"] }

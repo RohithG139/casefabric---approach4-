@@ -9,43 +9,54 @@
         <task-model>{
   "schema": {
     "title": "Employee details",
-    "description": "Personal details and the role of the new employee. Save draft keeps the form; Save &amp; continue creates the account and opens the IT request.",
+    "description": "Personal details and the role of the new employee. Save draft keeps the form; Save &amp; continue creates the account and opens the Equipment request by HR.",
     "type": "object",
     "properties": {
-          "swag": {
-  "type": "object",
-  "title": "Welcome kit",
-  "properties": {
-    "size": {
-      "type": "string",
-      "title": "T-shirt size",
-      "oneOf": [
-        { "const": "S", "title": "S" },
-        { "const": "M", "title": "M" },
-        { "const": "L", "title": "L" },
-        { "const": "XL", "title": "XL" }
-      ]
-    }
-  }
-},
       "Details": {
         "type": "object",
         "x-pii": "employee",
         "x-on-complete": "createEmployee"
+      },
+      "swag": {
+        "type": "object",
+        "title": "Welcome kit",
+        "properties": {
+          "size": {
+            "type": "string",
+            "title": "T-shirt size",
+            "oneOf": [
+              { "const": "S", "title": "S" },
+              { "const": "M", "title": "M" },
+              { "const": "L", "title": "L" },
+              { "const": "XL", "title": "XL" }
+            ]
+          },
+          "hoodieSize": {
+            "type": "string",
+            "title": "Hoodie size",
+            "oneOf": [
+              { "const": "S", "title": "S" },
+              { "const": "M", "title": "M" },
+              { "const": "L", "title": "L" },
+              { "const": "XL", "title": "XL" }
+            ]
+          }
+        }
       }
     }
   },
   "uiSchema": {
     "type": "VerticalLayout",
     "elements": [
-      { "type": "PiiSection", "scope": "#/properties/Details" },
+          { "type": "PiiSection", "scope": "#/properties/Details" },
           {
-  "type": "Group",
-  "label": "Welcome kit",
-  "elements": [
-    { "type": "Control", "scope": "#/properties/swag/properties/size" }
-  ]
-}
+        "type": "Group",
+        "label": "Welcome kit",
+        "elements": [
+          { "type": "Control", "scope": "#/properties/swag/properties/size" },
+          { "type": "Control", "scope": "#/properties/swag/properties/hoodieSize" }
+        ]
+      }
     ]
   },
   "submitLabel": "Save &amp; continue"

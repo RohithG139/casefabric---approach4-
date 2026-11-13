@@ -58,8 +58,8 @@ public class MailRelayController {
         Employee employee = employee(body.employeeId());
         String itEmail = anyWithRole("it_admin");
         send(itEmail, "", "New equipment request: " + employee.name(), "<div style='font-family: Arial, sans-serif; "
-                + "color: #111827'><p>HR has sent the IT &amp; equipment request for <b>" + employee.name() + "</b>.</p>"
-                + "<p>Open <i>My Tasks</i>, <b>Equipment request</b> at <a href='http://localhost:8090'>"
+                + "color: #111827'><p>HR has sent the equipment request for <b>" + employee.name() + "</b>.</p>"
+                + "<p>Open <i>My Tasks</i>, <b>Equipment approval by IT</b> at <a href='http://localhost:8090'>"
                 + "http://localhost:8090</a> to issue the equipment and set up the accounts.</p></div>");
     }
 

@@ -19,7 +19,7 @@ Browser ──► frontend (nginx :8090) ──/api──► backend (Spring Boo
   | `Activities` (list) | activityId, type, related goal, status, due date | `dev_activity` (plus description, outcome) | the three activity tasks |
   | `ProgressReviews` (list) | date, on track, plan completed | `dev_progress_review` (plus notes, adjustments) | Review progress |
   | `SelfAssessment` | submitted, result per goal | `dev_goal.self_result`, `self_comments`, `dev_round.self_summary` | Self-assessment |
-  | `Evaluation` | outcome, further development, result per goal | `dev_goal.eval_*`, `dev_round.eval_outcome`, `eval_summary`, `further_development` | Evaluate & document results |
+  | `Evaluation` | outcome, further development, result per goal | `dev_goal.eval_*`, `dev_round.eval_outcome`, `eval_summary`, `further_development` | Final review |
 
   - The database keeps the full record of every round (`dev_round`, one row per round; earlier rounds are the `CLOSED` rows). `PreviousRounds` is gone from the case file.
   - A new round starts empty: *Define goals & plan* gets no earlier plan; activities and reviews shown are the round's own. Earlier rounds are only on the plan page's *Plan record* tab.
@@ -96,9 +96,9 @@ After changing `src/keycloak/devplan-realm.json`, run `docker compose up -d --fo
 5. **Perform plan**:
    - While *2 · Perform plan* is active, the employee or manager adds activities on the plan page: *You can* → *Add an activity to the plan* (hidden in the other phases).
    - Every 14 days the manager gets **Review progress**. The manager can also start it at once with **Request early review** (plan page, *You can*; only users with the Manager case role see it); that also restarts the 14-day clock.
-   - Ticking *The plan has been carried out* starts the evaluation; otherwise the next check follows.
+   - Ticking *Next review* starts the final review; otherwise the next check follows.
 6. **shanmuk_emp**: **Self-assessment**: a result per goal (rows pre-filled) and a summary.
-7. **rahul_mngr**: **Evaluate & document results**.
+7. **rahul_mngr**: **Final review**.
    - *Further development needed* starts a new round, which starts from the last plan; the finished round is kept under *Earlier rounds*.
    - Otherwise the plan is closed, and a new one can be started.
 
@@ -117,9 +117,9 @@ pop-up (policies are plain ticks).
 2. **Step 1 · Employee details** (HR task): personal details (address optional), role and reporting. *Save &
    continue* creates the Keycloak account (set-password mail to the private address; Keycloak sends it through the CaseFabric mailcatcher, `mailcatcher:1025`, so it shows up at http://localhost:1080), the
    checklist, and adds the employee and manager to the case team. *Cancel* on a draft ends the case and deletes it.
-3. **Step 2 · IT & equipment request** (HR task) → *Send to IT*. IT's checklist then becomes exactly the request: the
+3. **Step 2 · Equipment request by HR** (HR task) → *Send to IT*. IT's checklist then becomes exactly the request: the
    laptop, each selected accessory and each selected account (all mandatory); unselected default IT items are removed.
-4. **kevin_it**: *My Tasks* shows one **Equipment request** per new joiner; IT's checklist items are checkboxes inside
+4. **kevin_it**: *My Tasks* shows one **Equipment approval by IT** per new joiner; IT's checklist items are checkboxes inside
    it, not separate rows. Record issued equipment (asset register; ticks the matching item), tick the accounts →
    *Mark setup done* (refused while a mandatory IT item is open).
 5. **New joiner**: *Dashboard* with their own items only.
@@ -131,8 +131,8 @@ pop-up (policies are plain ticks).
 
 | Process task | When | To | Content |
 |---|---|---|---|
-| **Notify IT** (`dv_mail_it_request.process`) | IT & equipment request completed | the IT admin | a new equipment request is waiting |
-| **Send onboarding complete e-mail** (`dv_mail_onboarded.process`) | the Onboarding stage ends | HR, manager in cc | the joiner is onboarded |
+| **Notify IT** (`dv_mail_it_request.process`) | Equipment request by HR completed | the IT admin | a new equipment request is waiting |
+| **Send onboarding complete e-mail** (`dv_mail_onboarded.process`) | the Employee onboarded milestone occurs | HR, manager in cc | the joiner is onboarded |
 
 Recipients come from the `Onboarding` case file item (`employeeEmail`, `username`, `managerEmail`, `hrEmail`,
 `itEmail`), which the backend fills when Employee details is completed. Engine 1.1.35 has no mail process
@@ -154,8 +154,8 @@ mailcatcher (http://localhost:1080).
 
 ### The form layer: forms from the engine, data from the database
 
-Every onboarding form is still the `task-model` of its `.humantask` (`dv_employee_details`, `dv_it_request`,
-`dv_equipment_request`); the app has no hand-coded forms. Three extra keys in the schema tell
+Every onboarding form is still the `task-model` of its `.humantask` (`dv_employee_details`, `dv_equipment_request_hr`,
+`dv_equipment_approval_it`); the app has no hand-coded forms. Three extra keys in the schema tell
 the backend (`forms/FormLayer.java`) which data is not case data:
 
 | Key | On | Meaning |

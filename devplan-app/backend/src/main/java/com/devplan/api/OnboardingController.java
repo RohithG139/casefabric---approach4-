@@ -226,7 +226,7 @@ public class OnboardingController {
 
     /**
      * ONB-03: the user's own open checklist items, for My Tasks. The IT admin's items are never listed here, even
-     * before the Equipment request task exists: they are only ever actioned from inside that one task (issuing an
+     * before the Equipment approval by IT task exists: they are only ever actioned from inside that one task (issuing an
      * asset ticks the equipment items; the accounts are ticked on its embedded checklist), so the IT admin always
      * sees exactly one task per new joiner, never loose rows.
      */
