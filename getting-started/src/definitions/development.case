@@ -118,16 +118,11 @@
         </stage>
         <processTask id="pi_mail_onboarded" name="Send onboarding complete e-mail" isBlocking="true" processRef="dv_mail_onboarded.process">
             <documentation textFormat="text/plain">
-                <text><![CDATA[Mail to HR (manager in cc) when the Onboarding stage ends (completes, or exits on the milestone Employee onboarded). At case level, because the stage itself has ended by then.]]></text>
+                <text><![CDATA[Mail to HR (manager in cc) when the milestone Employee onboarded occurs. At case level, because that milestone also exits the Onboarding stage.]]></text>
             </documentation>
             <entryCriterion id="ec_mail_onboarded_0">
-                <planItemOnPart id="op_mail_onboarded_0_0" sourceRef="pi_onboarding">
-                    <standardEvent>complete</standardEvent>
-                </planItemOnPart>
-            </entryCriterion>
-            <entryCriterion id="ec_mail_onboarded_1">
-                <planItemOnPart id="op_mail_onboarded_1_0" sourceRef="pi_onboarding">
-                    <standardEvent>exit</standardEvent>
+                <planItemOnPart id="op_mail_onboarded_0_0" sourceRef="pi_employee_onboarded">
+                    <standardEvent>occur</standardEvent>
                 </planItemOnPart>
             </entryCriterion>
             <inputs id="in_mail_onboarded_Employee" name="Employee" bindingRef="Employee"/>
@@ -510,7 +505,7 @@
                             </cafienne:implementation>
                         </extensionElements>
                     </humanTask>
-                    <humanTask id="pi_evaluate_results" name="Evaluate &amp; document results" isBlocking="true" performerRef="cr_dv_Manager">
+                    <humanTask id="pi_evaluate_results" name="Final review" isBlocking="true" performerRef="cr_dv_Manager">
                         <documentation textFormat="text/plain">
                             <text><![CDATA[Owner: Manager. On complete the devplan backend archives the finished round into PreviousRounds.]]></text>
                         </documentation>

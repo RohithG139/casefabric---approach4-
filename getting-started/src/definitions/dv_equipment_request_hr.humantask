@@ -29,7 +29,7 @@
                   { "const": "SHIP_HOME", "title": "Ship to home address" }
                 ]
               },
-              "itKeyboardLayout": { "type": "string", "title": "Keyboard layout", "enum": ["US International", "Dutch"] },
+              "itKeyboardLayout": { "type": "string", "title": "Keyboard type", "enum": ["US International", "Dutch"] },
               "itAccessories": {
                 "type": "array", "title": "Accessories", "uniqueItems": true,
                 "items": { "type": "string", "enum": ["Monitor", "Keyboard &amp; mouse", "Headset", "Docking station", "Phone", "Access badge"] }

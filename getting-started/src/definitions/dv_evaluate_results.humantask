@@ -1,7 +1,7 @@
 <humanTask xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne">
     <cafienne:implementation name="EvaluateResults" class="org.cafienne.cmmn.definition.task.WorkflowTaskDefinition">
         <documentation textFormat="text/plain">
-            <text><![CDATA[Evaluate & document results. Owner: Manager. Also copies the finished round (plan, approval, activities, reviews, self-assessment, evaluation) into PreviousRounds.]]></text>
+            <text><![CDATA[Final review. Owner: Manager. Also copies the finished round (plan, approval, activities, reviews, self-assessment, evaluation) into PreviousRounds.]]></text>
         </documentation>
         <input id="i_Plan__evaluate_results" name="Plan" typeRef="dv_plan.type"/>
         <input id="i_Activities__evaluate_results" name="Activities" typeRef="dv_activity.type"/>
@@ -11,7 +11,7 @@
         <output id="o_Evaluation__evaluate_results" name="Evaluation" typeRef="dv_evaluation.type"/>
         <task-model>{
   "schema": {
-    "title": "Evaluate &amp; document results",
+    "title": "Final review",
     "description": "Evaluate the plan with the employee and record the results. Choose whether a new plan round follows.",
     "type": "object",
     "required": [
@@ -166,7 +166,7 @@
             },
             "planCompleted": {
               "type": "boolean",
-              "title": "The plan has been carried out"
+              "title": "Next review"
             }
           }
         }

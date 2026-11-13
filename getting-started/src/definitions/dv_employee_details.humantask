@@ -48,6 +48,7 @@
   "uiSchema": {
     "type": "VerticalLayout",
     "elements": [
+          { "type": "PiiSection", "scope": "#/properties/Details" },
           {
         "type": "Group",
         "label": "Welcome kit",
@@ -55,8 +56,7 @@
           { "type": "Control", "scope": "#/properties/swag/properties/size" },
           { "type": "Control", "scope": "#/properties/swag/properties/hoodieSize" }
         ]
-      },
-      { "type": "PiiSection", "scope": "#/properties/Details" }
+      }
     ]
   },
   "submitLabel": "Save &amp; continue"

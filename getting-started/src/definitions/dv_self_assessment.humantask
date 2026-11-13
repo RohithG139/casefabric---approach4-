@@ -165,7 +165,7 @@
             },
             "planCompleted": {
               "type": "boolean",
-              "title": "The plan has been carried out"
+              "title": "Next review"
             }
           }
         }

@@ -10,7 +10,7 @@
         <task-model>{
   "schema": {
     "title": "Review progress",
-    "description": "Record how the plan is going. Tick \"The plan has been carried out\" to start the evaluation; otherwise the next check is in 14 days.",
+    "description": "Record how the plan is going. Tick \"Next review\" to move to the final review; otherwise the next check is in 14 days.",
     "type": "object",
     "required": [
       "ProgressReview"
@@ -164,7 +164,7 @@
             },
             "planCompleted": {
               "type": "boolean",
-              "title": "The plan has been carried out"
+              "title": "Next review"
             }
           }
         }
@@ -198,7 +198,7 @@
           },
           "planCompleted": {
             "type": "boolean",
-            "title": "The plan has been carried out",
+            "title": "Next review",
             "default": false
           }
         }

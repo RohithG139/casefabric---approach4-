@@ -153,9 +153,6 @@
         <CMMNShape cmmnElementRef="ec_mail_it_request_0">
             <Bounds x="364" y="285" width="12" height="20"/>
         </CMMNShape>
-        <CMMNShape cmmnElementRef="ec_mail_onboarded_1">
-            <Bounds x="1114" y="235" width="12" height="20"/>
-        </CMMNShape>
         <CMMNShape cmmnElementRef="pi_mail_onboarded">
             <Bounds x="1120" y="190" width="160" height="70"/>
         </CMMNShape>
@@ -184,7 +181,6 @@
         <CMMNEdge sourceCMMNElementRef="pi_complete_onboarding" targetCMMNElementRef="ec_employee_onboarded_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_employee_onboarded" targetCMMNElementRef="xc_onboarding_0"/>
         <CMMNEdge sourceCMMNElementRef="pi_it_request" targetCMMNElementRef="ec_mail_it_request_0"/>
-        <CMMNEdge sourceCMMNElementRef="pi_onboarding" targetCMMNElementRef="ec_mail_onboarded_0"/>
-        <CMMNEdge sourceCMMNElementRef="pi_onboarding" targetCMMNElementRef="ec_mail_onboarded_1"/>
+        <CMMNEdge sourceCMMNElementRef="pi_employee_onboarded" targetCMMNElementRef="ec_mail_onboarded_0"/>
     </CMMNDiagram>
 </CMMNDI>
