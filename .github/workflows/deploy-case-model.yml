@@ -1,0 +1,41 @@
+name: Deploy case model to CaseFabric
+
+# Runs when a change to the development case model lands on main (typically a PR merge).
+# Compiles the model and deploys it straight to the live engine's REST API - no container
+# rebuild, no restart, no downtime. Already-running cases keep their previous definition
+# until someone explicitly runs migrate-development-cases.py: migrating live cases onto a
+# new definition is a deliberate action, not an automatic side effect of a deploy, so it is
+# intentionally NOT part of this pipeline.
+#
+# One-time setup (repo Settings > Secrets and variables > Actions):
+#   Secrets:   DEVPLAN_BACKEND_CLIENT_SECRET  - the devplan-backend client secret configured
+#                                               in the deployed Keycloak's devplan realm
+#   Variables: CASEFABRIC_ENGINE_URL          - e.g. http://<server-ip>:2027
+#              CASEFABRIC_KEYCLOAK_URL        - e.g. http://<server-ip>:8280/realms/devplan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'getting-started/src/definitions/**'
+      - 'getting-started/compile-case.py'
+      - 'getting-started/deploy-case.py'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Deploy development case
+        working-directory: getting-started
+        env:
+          DEVPLAN_BACKEND_CLIENT_SECRET: ${{ secrets.DEVPLAN_BACKEND_CLIENT_SECRET }}
+        run: |
+          python deploy-case.py development \
+            --engine "${{ vars.CASEFABRIC_ENGINE_URL }}" \
+            --keycloak "${{ vars.CASEFABRIC_KEYCLOAK_URL }}"
