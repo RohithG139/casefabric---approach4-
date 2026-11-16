@@ -3,12 +3,16 @@
 # To run, call:
 #   $ docker-compose up
 #
+# mem_limit on each service below is a hard ceiling (not a reservation) sized to still fit a 1GB-RAM
+# free-tier host (e.g. AWS t2.micro/t3.micro) with swap added as a backstop - see README for the swap
+# setup. Remove these lines (or raise them) on a host with more memory.
 services:
   # supporting containers
   mailcatcher:
     image: schickling/mailcatcher:latest
     labels:
       component: mta
+    mem_limit: 40m
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://mailcatcher:1080"]
       interval: 10s
@@ -33,6 +37,7 @@ services:
     # through the app, not just this import file) survives a container recreate. --import-realm only seeds the
     # realm the first time it doesn't exist yet in that database; later JSON edits need a fresh database to reapply.
     command: ["start", "--import-realm"]
+    mem_limit: 450m # Keycloak reads this cgroup limit itself and caps its heap at 70% of it
     networks:
       - getting_started_network
     ports:
@@ -40,15 +45,15 @@ services:
     hostname: keycloak
     container_name: devplan-keycloak # "keycloak" is taken by the HR-Portal project's container
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HOSTNAME: http://localhost:8280
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8280}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://case-engine-db-postgres:5432/keycloak
-      KC_DB_USERNAME: postgres
-      KC_DB_PASSWORD: postgres
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - ./src/keycloak:/opt/keycloak/data/import:ro
     depends_on:
@@ -56,6 +61,7 @@ services:
 
   case-engine-db-postgres:
     image: postgres:16
+    mem_limit: 150m
     networks:
       - getting_started_network
     expose:
@@ -65,16 +71,17 @@ services:
     hostname: case-engine-db-postgres
     container_name: case-engine-db-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - ./src/postgres-initdb:/docker-entrypoint-initdb.d
       - case-engine-db-data:/var/lib/postgresql/data
 
   case-designer:
     image: cafienne/ide:latest
-    labels: 
+    labels:
       component: case-designer
+    mem_limit: 80m
     networks:
       - getting_started_network
     expose:
@@ -93,6 +100,7 @@ services:
     image: cafienne/cafienne-ui:0.7.3
     labels:
       component: case-user-interface
+    mem_limit: 40m
     networks:
       - getting_started_network
     ports:
@@ -113,6 +121,7 @@ services:
     image: cafienne/engine:1.1.35
     labels:
       component: case-engine
+    mem_limit: 400m
     networks:
       - getting_started_network
     expose:
@@ -138,9 +147,12 @@ services:
       CAFIENNE_OIDC_CONNECT_URL: http://keycloak:8080/realms/devplan/.well-known/openid-configuration
       CAFIENNE_OIDC_TOKEN_URL: http://keycloak:8080/realms/devplan/protocol/openid-connect/token
       CAFIENNE_OIDC_KEY_URL: http://keycloak:8080/realms/devplan/protocol/openid-connect/certs
-      CAFIENNE_OIDC_AUTHORIZATION_URL: http://localhost:8280/realms/devplan/protocol/openid-connect/auth
-      CAFIENNE_OIDC_ISSUER: http://localhost:8280/realms/devplan
+      CAFIENNE_OIDC_AUTHORIZATION_URL: ${CAFIENNE_OIDC_AUTHORIZATION_URL:-http://localhost:8280/realms/devplan/protocol/openid-connect/auth}
+      CAFIENNE_OIDC_ISSUER: ${CAFIENNE_OIDC_ISSUER:-http://localhost:8280/realms/devplan}
       CAFIENNE_PLATFORM_DEFAULT_TENANT: devplan
+      # JDK defaults to 25% of the container's memory limit for heap; use more of the 400m above since
+      # this container runs nothing else. The launcher script (sbt-native-packager) reads JAVA_OPTS directly.
+      JAVA_OPTS: ${CAFIENNE_JAVA_OPTS:--XX:MaxRAMPercentage=60}
     volumes:
       - ./run/cafienne/journal:/opt/cafienne/journal
       - ./run/cafienne/logs:/opt/cafienne/logs
@@ -162,6 +174,7 @@ services:
     image: nginx:alpine
     labels:
       component: swagger-proxy
+    mem_limit: 20m
     networks:
       - getting_started_network
     ports:
