@@ -11,7 +11,8 @@ devplan-app/frontend/dist/
 __pycache__/
 *.py[cod]
 
-# Environment overrides with local secrets
+# Environment overrides with real secrets - only *.example templates are tracked
+.env
 .env.local
 .env.*.local
 
