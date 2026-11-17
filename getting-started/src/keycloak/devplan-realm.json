@@ -57,6 +57,7 @@
       "name": "CaseFabric Case UI",
       "publicClient": true,
       "standardFlowEnabled": true,
+      "implicitFlowEnabled": true,
       "redirectUris": [
         "http://localhost:3317/*"
       ],

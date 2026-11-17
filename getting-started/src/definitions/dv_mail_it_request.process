@@ -1,4 +1,4 @@
-<process id="dv_mail_it_request.process" name="dv_mail_it_request.process" implementationType="http://www.omg.org/spec/CMMN/ProcessType/Unspecified">
+<process xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_mail_it_request.process" name="dv_mail_it_request.process" implementationType="http://www.omg.org/spec/CMMN/ProcessType/Unspecified">
     <documentation textFormat="text/plain">
         <text><![CDATA[Tells the IT admin that a new equipment request is waiting. The engine only triggers this with Employee.employeeId; the devplan backend resolves the IT admin's address and the employee's name from the employee directory (DB) and sends the mail through the CaseFabric mailcatcher (http://localhost:1080).]]></text>
     </documentation>

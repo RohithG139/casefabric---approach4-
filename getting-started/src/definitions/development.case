@@ -28,7 +28,7 @@
                         <body><![CDATA[replace]]></body>
                     </bindingRefinement>
                 </outputs>
-                <outputs id="_LvCNu_20" name="swag" bindingRef="swag">
+                <outputs id="_LvCNu_20" name="Comments" bindingRef="Comments">
                     <bindingRefinement id="_LvCNu_21">
                         <body><![CDATA[replace]]></body>
                     </bindingRefinement>
@@ -37,7 +37,7 @@
                     <cafienne:implementation xmlns:cafienne="org.cafienne" humanTaskRef="dv_employee_details.humantask">
                         <parameterMapping id="pm_employee_details_in_Employee" sourceRef="in_employee_details_Employee" targetRef="i_Employee__employee_details"/>
                         <parameterMapping id="pm_employee_details_out_Employee" sourceRef="o_Employee__employee_details" targetRef="out_employee_details_Employee"/>
-                        <parameterMapping id="_LvCNu_18" sourceRef="swag__G4OQ" targetRef="_LvCNu_20"/>
+                        <parameterMapping id="_LvCNu_0" sourceRef="Comments__n8va" targetRef="_LvCNu_20"/>
                     </cafienne:implementation>
                 </extensionElements>
             </humanTask>

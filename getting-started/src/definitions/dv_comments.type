@@ -1,0 +1,5 @@
+<type xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:cafienne="org.cafienne" id="dv_comments.type" name="dv_comments">
+    <schema>
+        <property id="sp__yjJ6c_0" name="comments" type="string" multiplicity="ExactlyOne"/>
+    </schema>
+</type>
